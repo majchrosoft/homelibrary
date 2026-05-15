@@ -1,0 +1,20 @@
+{
+  "hosting": {
+    "public": "composeApp/build/dist/wasmJs/productionExecutable",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "headers": [
+      {
+        "source": "**/*.@(js|wasm)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        ]
+      }
+    ],
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ]
+  },
+  "database": {
+    "rules": "shared/src/commonMain/kotlin/com/majchrosoft/homelibrary/data/firebase/database.rules.json"
+  }
+}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Home Library</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; background: #fffbfe; font-family: system-ui, sans-serif; }
+        #loading { display: flex; align-items: center; justify-content: center; height: 100vh; color: #625b71; }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading Home Library…</div>
+    <!--
+      Firebase JS SDK is loaded by the GitLive Firebase wrapper at runtime via dynamic
+      imports. Configuration values are injected by the build pipeline into firebase-config.js
+      from the FIREBASE_WEB_CONFIG GitHub secret. firebase-config.js is gitignored.
+    -->
+    <script type="application/javascript" src="firebase-config.js"></script>
+    <script type="application/javascript" src="composeApp.js"></script>
+</body>
+</html>

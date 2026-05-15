@@ -1,0 +1,17 @@
+{
+  "name": "homelibrary-anonymize",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-off script to anonymize the Home Library Firebase dev project into a sanitized target project.",
+  "main": "anonimize_dev.js",
+  "scripts": {
+    "start": "node anonimize_dev.js",
+    "dry-run": "node anonimize_dev.js --dry-run"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

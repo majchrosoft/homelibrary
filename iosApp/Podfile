@@ -1,0 +1,13 @@
+platform :ios, '15.0'
+use_frameworks!
+
+target 'iosApp' do
+  pod 'FirebaseCore',      '~> 11.0'
+  pod 'FirebaseAuth',      '~> 11.0'
+  pod 'FirebaseDatabase',  '~> 11.0'
+  pod 'FirebaseFirestore', '~> 11.0'
+  pod 'FirebaseStorage',   '~> 11.0'
+
+  # The shared KMP framework is consumed via SPM (see Package.swift below).
+  # If you prefer CocoaPods integration, swap to `pod 'Shared', :path => '../shared/build/cocoapods/...'`
+end

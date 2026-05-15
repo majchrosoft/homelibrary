@@ -1,0 +1,37 @@
+# Project-wide detekt overrides. Defaults from detekt 1.23.x are inherited.
+build:
+  maxIssues: 0
+  weights:
+    complexity: 2
+    LongParameterList: 1
+    style: 1
+    comments: 1
+
+complexity:
+  active: true
+  LongMethod:
+    threshold: 80
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 10
+
+style:
+  MagicNumber:
+    active: true
+    ignoreNumbers: ['-1', '0', '1', '2', '100']
+  ReturnCount:
+    active: true
+    max: 4
+  WildcardImport:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**']
+
+naming:
+  FunctionNaming:
+    functionPattern: '[a-z][a-zA-Z0-9]*'
+    excludes: ['**/*Composable*.kt', '**/ui/**']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][_A-Z0-9]*'
+
+formatting:
+  active: false # ktlint covers formatting

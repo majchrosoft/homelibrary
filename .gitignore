@@ -1,0 +1,65 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+!**/src/**/.gradle/
+
+# IDEA / Android Studio / Fleet
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.fleet/
+.kotlin/
+
+# Xcode
+**/xcuserdata/
+**/*.xcuserstate
+iosApp/Pods/
+iosApp/Podfile.lock
+iosApp/.build/
+iosApp/iosApp.xcworkspace/xcuserdata/
+iosApp/iosApp.xcodeproj/xcuserdata/
+iosApp/iosApp.xcodeproj/project.xcworkspace/xcuserdata/
+DerivedData/
+
+# macOS
+.DS_Store
+
+# Local config & secrets
+local.properties
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
+firebase-credentials.json
+firebase-config.js
+!firebase-config.example.js
+tools/anonymize/source-sa.json
+tools/anonymize/dest-sa.json
+tools/anonymize/mapping.json
+tools/anonymize/anonymized-db.dryrun.json
+tools/anonymize/node_modules/
+fastlane/.env*
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Node / Web
+node_modules/
+.npm/
+yarn-error.log
+*.log
+
+# Compose / Wasm output
+kotlin-js-store/
+
+# Coverage
+coverage/
+*.lcov
+
+# OS
+Thumbs.db

@@ -1,0 +1,10 @@
+# Service-account JSON keys — NEVER commit
+*.json
+!package.json
+
+# Generated mapping (contains real emails — keep local only)
+mapping.json
+anonymized-db.dryrun.json
+
+# Node
+node_modules/

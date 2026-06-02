@@ -56,18 +56,34 @@ kotlin {
     // home-library remains the production web frontend.
     // ------------------------------------------------------------------
     //
-    // @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
-    // wasmJs {
-    //     moduleName = "shared"
-    //     browser {
-    //         commonWebpackConfig {
-    //             outputFileName = "shared.js"
-    //         }
-    //     }
-    //     binaries.executable()
-    // }
+    @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
+    wasmJs {
+        moduleName = "shared"
+        browser {
+            commonWebpackConfig {
+                outputFileName = "shared.js"
+            }
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                }
+            }
+        }
+        binaries.executable()
+    }
 
     sourceSets {
+        val nonWasmMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(libs.firebase.common)
+                implementation(libs.firebase.auth)
+                implementation(libs.firebase.firestore)
+                implementation(libs.firebase.database)
+                implementation(libs.firebase.storage)
+            }
+        }
+
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
@@ -75,12 +91,6 @@ kotlin {
             implementation(libs.kotlinx.atomicfu)
 
             implementation(libs.koin.core)
-
-            implementation(libs.firebase.common)
-            implementation(libs.firebase.auth)
-            implementation(libs.firebase.firestore)
-            implementation(libs.firebase.database)
-            implementation(libs.firebase.storage)
 
             implementation(libs.multiplatform.settings)
             implementation(libs.multiplatform.settings.coroutines)
@@ -95,18 +105,27 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
+            implementation(libs.koin.test)
         }
 
+        androidMain.get().dependsOn(nonWasmMain)
         androidMain.dependencies {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.okhttp)
         }
 
+        iosMain.get().dependsOn(nonWasmMain)
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
 
-        // wasmJsMain dependencies disabled along with the wasmJs() target above.
+        jvmMain.get().dependsOn(nonWasmMain)
+
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+            implementation(kotlin("stdlib-wasm-js"))
+            implementation("org.jetbrains.kotlinx:kotlinx-browser-wasm-js:0.3")
+        }
     }
 }
 

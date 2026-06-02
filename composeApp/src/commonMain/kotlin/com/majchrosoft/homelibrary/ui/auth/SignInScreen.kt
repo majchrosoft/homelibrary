@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.majchrosoft.homelibrary.presentation.auth.AuthIntent
 import com.majchrosoft.homelibrary.presentation.auth.AuthViewModel
@@ -45,6 +49,7 @@ fun SignInScreen(viewModel: AuthViewModel) {
                 value = displayName,
                 onValueChange = { displayName = it },
                 label = { Text("Display name") },
+                singleLine = true,
                 modifier = Modifier.padding(top = 24.dp),
             )
         }
@@ -53,21 +58,28 @@ fun SignInScreen(viewModel: AuthViewModel) {
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.padding(top = if (isSignUp) 8.dp else 24.dp),
         )
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.padding(top = 8.dp),
         )
 
         if (state.errorMessage != null) {
-            Text(
-                text = state.errorMessage!!,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 8.dp),
-            )
+            SelectionContainer {
+                Text(
+                    text = state.errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
         }
 
         Button(

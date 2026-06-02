@@ -22,22 +22,28 @@ sealed class Screen {
      * and the SwiftUI `StateFlowPublisher<Output: AnyObject>` bridge. A sealed
      * interface would export as a non-`AnyObject` Swift protocol and break
      * `StateFlowPublisher<Screen>`.
+     *
+     * The signed-in user's own library — list with search + bookcase filter.
      */
-
-    /** The signed-in user's own library — list with search + bookcase filter. */
     data object Library : Screen()
 
     /** Detail view for a single item. */
-    data class ItemDetail(val itemId: String) : Screen()
+    data class ItemDetail(
+        val itemId: String,
+    ) : Screen()
 
     /** Add (when [itemId] is null) or edit an item. */
-    data class ItemEdit(val itemId: String? = null) : Screen()
+    data class ItemEdit(
+        val itemId: String? = null,
+    ) : Screen()
 
     /** Manage bookcases (list / add / edit / delete). */
     data object Bookcases : Screen()
 
     /** Add (when [bookcaseId] is null) or edit a bookcase. */
-    data class BookcaseEdit(val bookcaseId: String? = null) : Screen()
+    data class BookcaseEdit(
+        val bookcaseId: String? = null,
+    ) : Screen()
 
     /** Browse the public catalog of shareable items from other users. */
     data object SharedCatalog : Screen()
@@ -54,8 +60,9 @@ sealed class Screen {
  * Registered as a Koin `single` so all three platform hosts pull the same
  * instance.
  */
-class Navigator(initial: Screen = Screen.Library) {
-
+class Navigator(
+    initial: Screen = Screen.Library,
+) {
     private val stack: ArrayDeque<Screen> = ArrayDeque<Screen>().apply { addLast(initial) }
     private val _current: MutableStateFlow<Screen> = MutableStateFlow(initial)
     val current: StateFlow<Screen> = _current.asStateFlow()

@@ -23,16 +23,16 @@ kotlin {
     // Web (Wasm) target temporarily disabled — see shared/build.gradle.kts for the
     // rationale. Tracked in docs/RUN_LOCAL.md "What works" matrix.
     //
-    // @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
-    // wasmJs {
-    //     moduleName = "composeApp"
-    //     browser {
-    //         commonWebpackConfig {
-    //             outputFileName = "composeApp.js"
-    //         }
-    //     }
-    //     binaries.executable()
-    // }
+    @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
+    wasmJs {
+        moduleName = "composeApp"
+        browser {
+            commonWebpackConfig {
+                outputFileName = "composeApp.js"
+            }
+        }
+        binaries.executable()
+    }
 
     sourceSets {
         commonMain.dependencies {
@@ -46,6 +46,7 @@ kotlin {
             implementation(compose.components.resources)
 
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)

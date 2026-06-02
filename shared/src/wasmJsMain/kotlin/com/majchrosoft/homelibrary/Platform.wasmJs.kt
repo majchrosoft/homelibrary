@@ -1,9 +1,10 @@
 package com.majchrosoft.homelibrary
 
-import kotlinx.browser.window
+// Removed kotlinx.browser.window for now to fix compilation until dependency is fixed
+// import kotlinx.browser.window
 
 private class WasmJsPlatform : Platform {
-    override val name: String = "Web (${window.navigator.userAgent})"
+    override val name: String = "Web"
 }
 
 actual fun platform(): Platform = WasmJsPlatform()

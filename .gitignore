@@ -29,6 +29,7 @@ DerivedData/
 .DS_Store
 
 # Local config & secrets
+.env
 local.properties
 *.keystore
 *.jks

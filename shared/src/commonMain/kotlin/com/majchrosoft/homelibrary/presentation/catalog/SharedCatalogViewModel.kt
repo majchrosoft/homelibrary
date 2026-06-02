@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.onEach
 class SharedCatalogViewModel(
     private val itemRepository: ItemRepository,
 ) : MviViewModel<SharedCatalogState, SharedCatalogIntent>() {
-
     private val queryFlow = MutableStateFlow("")
 
     init {

@@ -15,6 +15,9 @@ data class SharedCatalogState(
 )
 
 sealed interface SharedCatalogIntent {
-    data class QueryChanged(val query: String) : SharedCatalogIntent
+    data class QueryChanged(
+        val query: String,
+    ) : SharedCatalogIntent
+
     data object DismissError : SharedCatalogIntent
 }

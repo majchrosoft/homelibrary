@@ -11,14 +11,33 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class ItemType {
-    @SerialName("book") BOOK,
-    @SerialName("audiobook") AUDIOBOOK,
-    @SerialName("ebook") EBOOK,
-    @SerialName("comic") COMIC,
-    @SerialName("magazine") MAGAZINE,
-    @SerialName("dvd") DVD,
-    @SerialName("bluray") BLURAY,
-    @SerialName("vinyl") VINYL,
-    @SerialName("boardgame") BOARDGAME,
-    @SerialName("other") OTHER,
+    @SerialName("book")
+    BOOK,
+
+    @SerialName("audiobook")
+    AUDIOBOOK,
+
+    @SerialName("ebook")
+    EBOOK,
+
+    @SerialName("comic")
+    COMIC,
+
+    @SerialName("magazine")
+    MAGAZINE,
+
+    @SerialName("dvd")
+    DVD,
+
+    @SerialName("bluray")
+    BLURAY,
+
+    @SerialName("vinyl")
+    VINYL,
+
+    @SerialName("boardgame")
+    BOARDGAME,
+
+    @SerialName("other")
+    OTHER,
 }

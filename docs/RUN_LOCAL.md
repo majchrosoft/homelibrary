@@ -2,8 +2,8 @@
 
 This is the end-to-end recipe for getting the Home Library KMP apps talking to your Firebase **dev** project on your machine. Follow it top-to-bottom the first time, then jump to "Day-to-day" for the short loop.
 
-> **What works today (KMP rewrite):** Android, iOS.
-> **Web is temporarily disabled** in the KMP project — `dev.gitlive:firebase-*:2.1.0` doesn't yet publish a wasmJs variant, and Compose Multiplatform's web target is wasmJs. Until either GitLive ships wasmJs support or we hand-roll Firebase JS SDK bindings, the production web frontend remains the legacy Angular app under `~/Documents/projects/majchrosoft/home-library`. The `wasmJs { }` blocks in `shared/build.gradle.kts` and `composeApp/build.gradle.kts` are commented out with a pointer to this paragraph.
+> **What works today (KMP rewrite):** Android, iOS, Web (Wasm).
+> **Web (Wasm) support is enabled** but limited. Firebase functionality is currently shimmed with "no-op" implementations because `dev.gitlive:firebase-*:2.1.0` doesn't yet publish a wasmJs variant. Until GitLive ships wasmJs support or we implement alternative bindings, authentication and data synchronization will not work on Web. The legacy Angular app under `~/Documents/projects/majchrosoft/home-library` remains the full-featured production web frontend.
 
 > **Important.** This doc assumes you've already anonymized your dev DB via `tools/anonymize/anonimize_dev.js`. Don't point any of these apps at production while iterating.
 
@@ -42,26 +42,17 @@ In the [Firebase Console](https://console.firebase.google.com/) for your **dev**
    - iOS: `com.majchrosoft.homelibrary`
    - Web: any nickname is fine; e.g. `home-library-web-dev`
 
-Now download the three config files:
+Now configure the Firebase credentials for all platforms using a single `.env` file:
 
-| Platform | Download from                                                                 | Drop it at                                              |
-|----------|-------------------------------------------------------------------------------|---------------------------------------------------------|
-| Android  | Project settings → Android app → `google-services.json`                       | `composeApp/google-services.json`                       |
-| iOS      | Project settings → iOS app → `GoogleService-Info.plist`                       | `iosApp/iosApp/GoogleService-Info.plist`                |
-| Web      | Project settings → Web app → SDK setup → Config (the JS object)               | paste into `composeApp/src/wasmJsMain/resources/firebase-config.js` (see step 2 below) |
+1. Copy the example:
+   ```bash
+   cp .env.example .env
+   ```
+2. Open `.env` and fill in the values from your Firebase Console (Project settings). 
 
-All three are gitignored — verify with `git status` before committing.
+The build process automatically generates the platform-specific config files (`google-services.json`, `GoogleService-Info.plist`, and `firebase-config.js`) from this `.env` file during the first build or whenever you run `./gradlew generateFirebaseConfig`.
 
-### Web config file
-
-Copy the example and edit:
-
-```bash
-cp composeApp/src/wasmJsMain/resources/firebase-config.example.js \
-   composeApp/src/wasmJsMain/resources/firebase-config.js
-```
-
-Replace each `REPLACE_ME` with the value from Firebase Console → Project settings → Web app → SDK setup. Keep `databaseURL` set to the URL from step 1.2.
+All three files are gitignored.
 
 ### Push the RTDB rules
 
@@ -80,9 +71,24 @@ firebase deploy --only database
 
 Both KMP targets read from the **same** dev DB once configured above. Sign in with one of the test accounts created by `tools/anonymize/anonimize_dev.js` (default password is set in that script — check the README before running it the first time).
 
-### Web (KMP build) — disabled for now
+### Web (KMP build)
 
-The `wasmJs { }` target blocks are commented out (see the banner at the top of this file). For browser access while we wait on GitLive Firebase wasmJs support, run the legacy Angular app:
+The Wasm target is enabled and can be run locally:
+
+```bash
+# 1. Ensure .env is present and configs are generated
+./gradlew generateFirebaseConfig
+
+# 2. Run the dev server (defaults to http://localhost:8080)
+./gradlew :composeApp:wasmJsBrowserDevelopmentRun
+```
+
+**Note on `firebase serve` vs `wasmJsBrowserDevelopmentRun`:**
+- `wasmJsBrowserDevelopmentRun` uses Webpack Dev Server and is the recommended way to iterate.
+- `firebase serve` (or `firebase deploy`) uses the production distribution in `composeApp/build/dist/wasmJs/productionExecutable`. You must run `./gradlew :composeApp:wasmJsBrowserDistribution` to update it before serving.
+- If you see a permanent "Loading..." screen on `localhost:8000`, it's likely because the production build is missing or stale. Use the dev server on port 8080 instead.
+
+Note that Firebase is currently mocked for Web. For full functionality while we wait on GitLive Firebase wasmJs support, run the legacy Angular app:
 
 ```bash
 cd ~/Documents/projects/majchrosoft/home-library
@@ -131,7 +137,8 @@ If the build complains about `GoogleService-Info.plist not found`, double-check 
 # spin up whichever target you're iterating on
 ./gradlew :composeApp:installDebug                      # android
 cd iosApp && xcodegen generate && open iosApp.xcworkspace # ios
-# Web target is currently the legacy Angular app — see the banner up top.
+# Web target:
+./gradlew :composeApp:wasmJsBrowserDevelopmentRun
 ```
 
 The shared module is the single source of truth — change a model in `shared/`, all three apps pick it up.
@@ -156,4 +163,4 @@ Sign in on Android and iOS and look for the same items / bookcases. They should 
 
 **iOS: `Module 'Shared' not found`.** The XCFramework didn't build. Run `./gradlew :shared:assembleSharedDebugXCFramework --info` from the repo root to see the underlying error.
 
-**`Could not resolve dev.gitlive:firebase-*:2.1.0` / "No matching variant of dev.gitlive:firebase-*".** You re-enabled the `wasmJs { }` block before GitLive ships wasm support — see the banner at the top of this file.
+**`Could not resolve dev.gitlive:firebase-*:2.1.0` / "No matching variant of dev.gitlive:firebase-*".** This should no longer occur as Firebase dependencies have been moved to a `nonWasmMain` source set.

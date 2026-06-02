@@ -23,8 +23,9 @@ class ItemEditViewModel(
     private val bookcaseRepository: BookcaseRepository,
     private val authRepository: AuthRepository,
 ) : MviViewModel<ItemEditState, ItemEditIntent>() {
-
-    init { load() }
+    init {
+        load()
+    }
 
     override fun initialState() = ItemEditState(editingItemId = editingItemId, isLoading = true)
 
@@ -51,9 +52,15 @@ class ItemEditViewModel(
                         selectedBookcaseId = existing.item.bookcase,
                         isbn = existing.item.isbn.orEmpty(),
                         publisher = existing.item.publisher.orEmpty(),
-                        publishedYear = existing.item.publishedYear?.toString().orEmpty(),
+                        publishedYear =
+                            existing.item.publishedYear
+                                ?.toString()
+                                .orEmpty(),
                         language = existing.item.language.orEmpty(),
-                        pages = existing.item.pages?.toString().orEmpty(),
+                        pages =
+                            existing.item.pages
+                                ?.toString()
+                                .orEmpty(),
                         coverUrl = existing.item.coverUrl.orEmpty(),
                         notes = existing.item.notes.orEmpty(),
                         shareable = existing.item.shareable,
@@ -96,33 +103,36 @@ class ItemEditViewModel(
                 setState { it.copy(isSaving = false, errorMessage = "Not signed in") }
                 return@launch
             }
-            val details = ItemDetails(
-                title = current.title.trim(),
-                author = current.author.trim(),
-                type = current.type,
-                quality = current.quality,
-                bookcase = current.selectedBookcaseId,
-                isbn = current.isbn.trim().ifBlank { null },
-                publisher = current.publisher.trim().ifBlank { null },
-                publishedYear = current.publishedYear.toIntOrNull(),
-                language = current.language.trim().ifBlank { null },
-                pages = current.pages.toIntOrNull(),
-                coverUrl = current.coverUrl.trim().ifBlank { null },
-                notes = current.notes.trim().ifBlank { null },
-                shareable = current.shareable,
-            )
-            val result = if (editingItemId == null) {
-                itemRepository.add(Item(ownerId = user.id, item = details))
-                    .map { /* discard the new id — host navigates away on isSaved */ }
-            } else {
-                // Preserve existing borrow state when editing — only descriptive fields change here.
-                val existing = itemRepository.getById(user.id, editingItemId)
-                if (existing == null) {
-                    Result.failure(IllegalStateException("Item disappeared during edit"))
+            val details =
+                ItemDetails(
+                    title = current.title.trim(),
+                    author = current.author.trim(),
+                    type = current.type,
+                    quality = current.quality,
+                    bookcase = current.selectedBookcaseId,
+                    isbn = current.isbn.trim().ifBlank { null },
+                    publisher = current.publisher.trim().ifBlank { null },
+                    publishedYear = current.publishedYear.toIntOrNull(),
+                    language = current.language.trim().ifBlank { null },
+                    pages = current.pages.toIntOrNull(),
+                    coverUrl = current.coverUrl.trim().ifBlank { null },
+                    notes = current.notes.trim().ifBlank { null },
+                    shareable = current.shareable,
+                )
+            val result =
+                if (editingItemId == null) {
+                    itemRepository
+                        .add(Item(ownerId = user.id, item = details))
+                        .map { /* discard the new id — host navigates away on isSaved */ }
                 } else {
-                    itemRepository.update(existing.copy(item = details))
+                    // Preserve existing borrow state when editing — only descriptive fields change here.
+                    val existing = itemRepository.getById(user.id, editingItemId)
+                    if (existing == null) {
+                        Result.failure(IllegalStateException("Item disappeared during edit"))
+                    } else {
+                        itemRepository.update(existing.copy(item = details))
+                    }
                 }
-            }
             result
                 .onSuccess { setState { it.copy(isSaving = false, isSaved = true) } }
                 .onFailure { e -> setState { it.copy(isSaving = false, errorMessage = e.message) } }

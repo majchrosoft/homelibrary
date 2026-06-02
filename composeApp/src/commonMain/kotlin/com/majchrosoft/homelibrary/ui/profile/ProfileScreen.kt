@@ -27,14 +27,18 @@ import androidx.compose.ui.unit.dp
 import com.majchrosoft.homelibrary.presentation.navigation.Navigator
 import com.majchrosoft.homelibrary.presentation.profile.ProfileIntent
 import com.majchrosoft.homelibrary.presentation.profile.ProfileViewModel
+import io.github.aakira.napier.Napier
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen() {
+    Napier.d { "ProfileScreen: Composition" }
     val viewModel = koinInject<ProfileViewModel>()
     val navigator = koinInject<Navigator>()
     val state by viewModel.state.collectAsState()
+    
+    Napier.d { "ProfileScreen: state.isInitialLoading=${state.isInitialLoading}, user=${state.user?.id}" }
 
     Scaffold(
         topBar = {
@@ -52,12 +56,16 @@ fun ProfileScreen() {
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                state.user?.displayName?.takeIf { it.isNotBlank() }
-                    ?: state.user?.email?.ifBlank { "—" }
-                    ?: "Signed out",
-                style = MaterialTheme.typography.headlineSmall,
-            )
+            if (state.isInitialLoading) {
+                Text("Loading...", style = MaterialTheme.typography.headlineSmall)
+            } else {
+                Text(
+                    state.user?.displayName?.takeIf { it.isNotBlank() }
+                        ?: state.user?.email?.ifBlank { "—" }
+                        ?: "Signed out",
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+            }
             state.user?.email?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

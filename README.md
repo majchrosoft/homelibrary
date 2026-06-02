@@ -4,7 +4,7 @@ A cross-platform home library: catalogue your books and other media, see where e
 
 - **Android** — Compose Multiplatform UI, distributed via Google Play
 - **iOS** — Native SwiftUI consuming the shared KMP framework, distributed via TestFlight / App Store
-- **Web** — *temporarily on the legacy Angular app* (under `~/Documents/projects/majchrosoft/home-library`). The KMP wasmJs target is commented out until `dev.gitlive:firebase-*` ships wasmJs variants — see [`docs/RUN_LOCAL.md`](docs/RUN_LOCAL.md) for the rationale.
+- **Web** — Compose Multiplatform UI (Wasm). Note: Firebase functionality is currently limited on Web due to SDK support; see [`docs/RUN_LOCAL.md`](docs/RUN_LOCAL.md) for details.
 
 The backend is **Firebase**: Authentication, Realtime Database, Storage, and a small set of Cloud Functions (the public catalog projection lives there — not in the client).
 

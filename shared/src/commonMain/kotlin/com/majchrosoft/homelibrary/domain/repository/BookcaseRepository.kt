@@ -11,8 +11,23 @@ import kotlinx.coroutines.flow.Flow
 interface BookcaseRepository {
     fun observeMine(ownerId: String): Flow<List<Bookcase>>
 
-    suspend fun getById(ownerId: String, bookcaseId: String): Bookcase?
-    suspend fun add(ownerId: String, bookcase: Bookcase): Result<Bookcase>
-    suspend fun update(ownerId: String, bookcase: Bookcase): Result<Unit>
-    suspend fun delete(ownerId: String, bookcaseId: String): Result<Unit>
+    suspend fun getById(
+        ownerId: String,
+        bookcaseId: String,
+    ): Bookcase?
+
+    suspend fun add(
+        ownerId: String,
+        bookcase: Bookcase,
+    ): Result<Bookcase>
+
+    suspend fun update(
+        ownerId: String,
+        bookcase: Bookcase,
+    ): Result<Unit>
+
+    suspend fun delete(
+        ownerId: String,
+        bookcaseId: String,
+    ): Result<Unit>
 }

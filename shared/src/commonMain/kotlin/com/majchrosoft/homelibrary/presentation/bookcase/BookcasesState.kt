@@ -9,6 +9,9 @@ data class BookcasesState(
 )
 
 sealed interface BookcasesIntent {
-    data class Delete(val bookcaseId: String) : BookcasesIntent
+    data class Delete(
+        val bookcaseId: String,
+    ) : BookcasesIntent
+
     data object DismissError : BookcasesIntent
 }

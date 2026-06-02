@@ -7,7 +7,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class LibraryStateTest {
-
     private fun item(
         id: String,
         title: String,
@@ -28,31 +27,35 @@ class LibraryStateTest {
 
     @Test
     fun filtersByTitleCaseInsensitively() {
-        val state = LibraryState(
-            query = "kotlin",
-            items = listOf(item("1", "Kotlin in Action"), item("2", "Effective Java")),
-        )
+        val state =
+            LibraryState(
+                query = "kotlin",
+                items = listOf(item("1", "Kotlin in Action"), item("2", "Effective Java")),
+            )
         assertEquals(listOf("Kotlin in Action"), state.filtered.map { it.item.title })
     }
 
     @Test
     fun filtersByAuthor() {
-        val state = LibraryState(
-            query = "Bloch",
-            items = listOf(
-                item("1", "Effective Java", author = "Joshua Bloch"),
-                item("2", "Clean Code", author = "Robert C. Martin"),
-            ),
-        )
+        val state =
+            LibraryState(
+                query = "Bloch",
+                items =
+                    listOf(
+                        item("1", "Effective Java", author = "Joshua Bloch"),
+                        item("2", "Clean Code", author = "Robert C. Martin"),
+                    ),
+            )
         assertEquals(listOf("Effective Java"), state.filtered.map { it.item.title })
     }
 
     @Test
     fun filtersByIsbn() {
-        val state = LibraryState(
-            query = "9781617",
-            items = listOf(item("1", "X", isbn = "9781617295362"), item("2", "Y", isbn = "9780132350884")),
-        )
+        val state =
+            LibraryState(
+                query = "9781617",
+                items = listOf(item("1", "X", isbn = "9781617295362"), item("2", "Y", isbn = "9780132350884")),
+            )
         assertEquals(listOf("X"), state.filtered.map { it.item.title })
     }
 
@@ -60,15 +63,17 @@ class LibraryStateTest {
     fun filtersByBookcase() {
         val livingRoom = Bookcase(id = "lr", name = "Living room")
         val office = Bookcase(id = "of", name = "Office")
-        val state = LibraryState(
-            selectedBookcaseId = livingRoom.id,
-            bookcases = listOf(livingRoom, office),
-            items = listOf(
-                item("1", "A", bookcase = "lr"),
-                item("2", "B", bookcase = "of"),
-                item("3", "C", bookcase = "lr"),
-            ),
-        )
+        val state =
+            LibraryState(
+                selectedBookcaseId = livingRoom.id,
+                bookcases = listOf(livingRoom, office),
+                items =
+                    listOf(
+                        item("1", "A", bookcase = "lr"),
+                        item("2", "B", bookcase = "of"),
+                        item("3", "C", bookcase = "lr"),
+                    ),
+            )
         assertEquals(listOf("A", "C"), state.filtered.map { it.item.title })
     }
 }

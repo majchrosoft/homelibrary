@@ -16,7 +16,6 @@ data class ItemEditState(
     val isSaved: Boolean = false,
     val errorMessage: String? = null,
     val bookcases: List<Bookcase> = emptyList(),
-
     // Form fields
     val title: String = "",
     val author: String = "",
@@ -36,19 +35,59 @@ data class ItemEditState(
 }
 
 sealed interface ItemEditIntent {
-    data class TitleChanged(val value: String) : ItemEditIntent
-    data class AuthorChanged(val value: String) : ItemEditIntent
-    data class TypeChanged(val value: ItemType) : ItemEditIntent
-    data class QualityChanged(val value: ItemQuality) : ItemEditIntent
-    data class BookcaseSelected(val bookcaseId: String?) : ItemEditIntent
-    data class IsbnChanged(val value: String) : ItemEditIntent
-    data class PublisherChanged(val value: String) : ItemEditIntent
-    data class PublishedYearChanged(val value: String) : ItemEditIntent
-    data class LanguageChanged(val value: String) : ItemEditIntent
-    data class PagesChanged(val value: String) : ItemEditIntent
-    data class CoverUrlChanged(val value: String) : ItemEditIntent
-    data class NotesChanged(val value: String) : ItemEditIntent
-    data class ShareableChanged(val value: Boolean) : ItemEditIntent
+    data class TitleChanged(
+        val value: String,
+    ) : ItemEditIntent
+
+    data class AuthorChanged(
+        val value: String,
+    ) : ItemEditIntent
+
+    data class TypeChanged(
+        val value: ItemType,
+    ) : ItemEditIntent
+
+    data class QualityChanged(
+        val value: ItemQuality,
+    ) : ItemEditIntent
+
+    data class BookcaseSelected(
+        val bookcaseId: String?,
+    ) : ItemEditIntent
+
+    data class IsbnChanged(
+        val value: String,
+    ) : ItemEditIntent
+
+    data class PublisherChanged(
+        val value: String,
+    ) : ItemEditIntent
+
+    data class PublishedYearChanged(
+        val value: String,
+    ) : ItemEditIntent
+
+    data class LanguageChanged(
+        val value: String,
+    ) : ItemEditIntent
+
+    data class PagesChanged(
+        val value: String,
+    ) : ItemEditIntent
+
+    data class CoverUrlChanged(
+        val value: String,
+    ) : ItemEditIntent
+
+    data class NotesChanged(
+        val value: String,
+    ) : ItemEditIntent
+
+    data class ShareableChanged(
+        val value: Boolean,
+    ) : ItemEditIntent
+
     data object Save : ItemEditIntent
+
     data object DismissError : ItemEditIntent
 }

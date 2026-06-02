@@ -12,11 +12,11 @@ class BookcaseEditViewModel(
     private val bookcaseRepository: BookcaseRepository,
     private val authRepository: AuthRepository,
 ) : MviViewModel<BookcaseEditState, BookcaseEditIntent>() {
+    init {
+        load()
+    }
 
-    init { load() }
-
-    override fun initialState() =
-        BookcaseEditState(editingBookcaseId = editingBookcaseId, isLoading = editingBookcaseId != null)
+    override fun initialState() = BookcaseEditState(editingBookcaseId = editingBookcaseId, isLoading = editingBookcaseId != null)
 
     private fun load() {
         if (editingBookcaseId == null) return
@@ -65,17 +65,19 @@ class BookcaseEditViewModel(
                 setState { it.copy(isSaving = false, errorMessage = "Not signed in") }
                 return@launch
             }
-            val toSave = Bookcase(
-                id = editingBookcaseId.orEmpty(),
-                name = current.name.trim(),
-                description = current.description.trim().ifBlank { null },
-                location = current.location.trim().ifBlank { null },
-            )
-            val result = if (editingBookcaseId == null) {
-                bookcaseRepository.add(user.id, toSave).map { }
-            } else {
-                bookcaseRepository.update(user.id, toSave)
-            }
+            val toSave =
+                Bookcase(
+                    id = editingBookcaseId.orEmpty(),
+                    name = current.name.trim(),
+                    description = current.description.trim().ifBlank { null },
+                    location = current.location.trim().ifBlank { null },
+                )
+            val result =
+                if (editingBookcaseId == null) {
+                    bookcaseRepository.add(user.id, toSave).map { }
+                } else {
+                    bookcaseRepository.update(user.id, toSave)
+                }
             result
                 .onSuccess { setState { it.copy(isSaving = false, isSaved = true) } }
                 .onFailure { e -> setState { it.copy(isSaving = false, errorMessage = e.message) } }

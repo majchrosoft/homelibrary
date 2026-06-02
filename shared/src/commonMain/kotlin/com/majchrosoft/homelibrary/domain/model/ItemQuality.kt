@@ -12,10 +12,21 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class ItemQuality {
-    @SerialName("new") NEW,
-    @SerialName("like_new") LIKE_NEW,
-    @SerialName("good") GOOD,
-    @SerialName("fair") FAIR,
-    @SerialName("poor") POOR,
-    @SerialName("damaged") DAMAGED,
+    @SerialName("new")
+    NEW,
+
+    @SerialName("like_new")
+    LIKE_NEW,
+
+    @SerialName("good")
+    GOOD,
+
+    @SerialName("fair")
+    FAIR,
+
+    @SerialName("poor")
+    POOR,
+
+    @SerialName("damaged")
+    DAMAGED,
 }

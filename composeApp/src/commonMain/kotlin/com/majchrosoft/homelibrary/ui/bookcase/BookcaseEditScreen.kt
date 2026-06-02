@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -88,7 +89,9 @@ fun BookcaseEditScreen(bookcaseId: String?) {
             )
 
             if (state.errorMessage != null) {
-                Text(state.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                SelectionContainer {
+                    Text(state.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                }
             }
 
             Button(

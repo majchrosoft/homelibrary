@@ -9,8 +9,8 @@ import com.majchrosoft.homelibrary.presentation.item.ItemEditViewModel
 import com.majchrosoft.homelibrary.presentation.library.LibraryViewModel
 import com.majchrosoft.homelibrary.presentation.navigation.Navigator
 import com.majchrosoft.homelibrary.presentation.profile.ProfileViewModel
-import org.koin.mp.KoinPlatform
 import org.koin.core.parameter.parametersOf
+import org.koin.mp.KoinPlatform
 
 /**
  * Top-level Koin resolution helpers exposed to Swift. Top-level functions become
@@ -42,13 +42,10 @@ fun resolveNavigator(): Navigator = KoinPlatform.getKoin().get()
  * directly to Swift, so we provide one factory per screen-with-id.
  */
 @Suppress("unused") // Called from Swift.
-fun resolveItemDetailViewModel(itemId: String): ItemDetailViewModel =
-    KoinPlatform.getKoin().get { parametersOf(itemId) }
+fun resolveItemDetailViewModel(itemId: String): ItemDetailViewModel = KoinPlatform.getKoin().get { parametersOf(itemId) }
 
 @Suppress("unused") // Called from Swift.
-fun resolveItemEditViewModel(itemId: String?): ItemEditViewModel =
-    KoinPlatform.getKoin().get { parametersOf(itemId) }
+fun resolveItemEditViewModel(itemId: String?): ItemEditViewModel = KoinPlatform.getKoin().get { parametersOf(itemId) }
 
 @Suppress("unused") // Called from Swift.
-fun resolveBookcaseEditViewModel(bookcaseId: String?): BookcaseEditViewModel =
-    KoinPlatform.getKoin().get { parametersOf(bookcaseId) }
+fun resolveBookcaseEditViewModel(bookcaseId: String?): BookcaseEditViewModel = KoinPlatform.getKoin().get { parametersOf(bookcaseId) }

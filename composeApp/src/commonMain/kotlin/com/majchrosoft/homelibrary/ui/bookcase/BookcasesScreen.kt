@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -74,11 +75,13 @@ fun BookcasesScreen() {
                 verticalArrangement = Arrangement.Center,
             ) { CircularProgressIndicator() }
 
-            state.errorMessage != null -> Text(
-                text = "Error: ${state.errorMessage}",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(padding).padding(16.dp),
-            )
+            state.errorMessage != null -> SelectionContainer {
+                Text(
+                    text = "Error: ${state.errorMessage}",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(padding).padding(16.dp),
+                )
+            }
 
             state.bookcases.isEmpty() -> Text(
                 "No bookcases yet — tap + to add a shelf, box, or room.",

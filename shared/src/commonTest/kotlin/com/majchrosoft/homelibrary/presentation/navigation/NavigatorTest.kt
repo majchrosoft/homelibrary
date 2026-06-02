@@ -6,7 +6,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class NavigatorTest {
-
     @Test
     fun startsOnLibraryAndCannotGoBack() {
         val nav = Navigator()

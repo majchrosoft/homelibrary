@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -194,7 +195,9 @@ fun ItemEditScreen(itemId: String?) {
             }
 
             if (state.errorMessage != null) {
-                Text(state.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                SelectionContainer {
+                    Text(state.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                }
             }
 
             Button(

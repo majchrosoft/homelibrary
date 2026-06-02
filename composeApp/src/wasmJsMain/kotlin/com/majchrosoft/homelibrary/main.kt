@@ -11,7 +11,15 @@ import kotlinx.browser.document
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     Napier.base(DebugAntilog())
+    Napier.d { "Wasm main() started" }
     initKoin()
 
-    ComposeViewport(document.body!!) { App() }
+    ComposeViewport(document.body!!) {
+        Napier.d { "ComposeViewport attached" }
+        val loadingElement = document.getElementById("loading")
+        loadingElement?.apply {
+            setAttribute("style", "display: none !important;")
+        }
+        App()
+    }
 }

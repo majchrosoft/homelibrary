@@ -18,6 +18,51 @@
       from the FIREBASE_WEB_CONFIG GitHub secret. firebase-config.js is gitignored.
     -->
     <script type="application/javascript" src="firebase-config.js"></script>
+    <script type="application/javascript">
+        // Placeholder objects for KMP Wasm interop to prevent crashes during early init
+        window.firebaseApp = null;
+        window.firebaseAuth = null;
+        window.firebaseAuthUtils = null;
+    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, updateProfile, getIdToken } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+        import { getDatabase, ref, onValue, push, set, update, remove, query, orderByChild, limitToFirst } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+
+        try {
+            const app = initializeApp(window.__FIREBASE_CONFIG__);
+            const auth = getAuth(app);
+            const db = getDatabase(app);
+
+            // Expose to window for KMP Wasm interop
+            window.firebaseApp = app;
+            window.firebaseAuth = auth;
+            window.firebaseDb = db;
+            window.firebaseAuthUtils = {
+                onAuthStateChanged,
+                signInWithEmailAndPassword,
+                createUserWithEmailAndPassword,
+                sendPasswordResetEmail,
+                signOut,
+                updateProfile,
+                getIdToken
+            };
+            window.firebaseDbUtils = {
+                ref,
+                onValue,
+                push,
+                set,
+                update,
+                remove,
+                query,
+                orderByChild,
+                limitToFirst
+            };
+            console.log("Firebase initialized successfully");
+        } catch (e) {
+            console.error("Failed to initialize Firebase:", e);
+        }
+    </script>
     <script type="application/javascript" src="composeApp.js"></script>
 </body>
 </html>

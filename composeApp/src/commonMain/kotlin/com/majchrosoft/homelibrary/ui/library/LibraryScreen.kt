@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
@@ -39,14 +40,18 @@ import com.majchrosoft.homelibrary.presentation.library.LibraryIntent
 import com.majchrosoft.homelibrary.presentation.library.LibraryViewModel
 import com.majchrosoft.homelibrary.presentation.navigation.Navigator
 import com.majchrosoft.homelibrary.presentation.navigation.Screen
+import io.github.aakira.napier.Napier
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen() {
+    Napier.d { "LibraryScreen: Composition" }
     val viewModel = koinInject<LibraryViewModel>()
     val navigator = koinInject<Navigator>()
     val state by viewModel.state.collectAsState()
+    
+    Napier.d { "LibraryScreen: state.isLoading=${state.isLoading}, items=${state.items.size}" }
 
     Scaffold(
         topBar = {
@@ -111,11 +116,13 @@ fun LibraryScreen() {
                     verticalArrangement = Arrangement.Center,
                 ) { CircularProgressIndicator() }
 
-                state.errorMessage != null -> Text(
-                    text = "Error: ${state.errorMessage}",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(16.dp),
-                )
+                state.errorMessage != null -> SelectionContainer {
+                    Text(
+                        text = "Error: ${state.errorMessage}",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
 
                 state.filtered.isEmpty() -> Text(
                     "No items yet — tap + to add one.",

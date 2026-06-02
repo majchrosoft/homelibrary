@@ -21,26 +21,39 @@ data class LibraryState(
 ) {
     val filtered: List<Item>
         get() {
-            val byBookcase = if (selectedBookcaseId == null) {
-                items
-            } else {
-                items.filter { it.item.bookcase == selectedBookcaseId }
-            }
+            val byBookcase =
+                if (selectedBookcaseId == null) {
+                    items
+                } else {
+                    items.filter { it.item.bookcase == selectedBookcaseId }
+                }
             return if (query.isBlank()) {
                 byBookcase
             } else {
                 byBookcase.filter { i ->
-                    i.item.title.contains(query, ignoreCase = true) ||
-                        i.item.author.contains(query, ignoreCase = true) ||
-                        (i.item.isbn?.contains(query, ignoreCase = true) == true)
+                    val t = i.item.title
+                    val a = i.item.author
+                    val isbn = i.item.isbn
+                    val p = i.item.publisher
+                    t.contains(query, ignoreCase = true) ||
+                        a.contains(query, ignoreCase = true) ||
+                        (isbn?.contains(query, ignoreCase = true) == true) ||
+                        (p?.contains(query, ignoreCase = true) == true)
                 }
             }
         }
 }
 
 sealed interface LibraryIntent {
-    data class QueryChanged(val query: String) : LibraryIntent
-    data class BookcaseSelected(val bookcaseId: String?) : LibraryIntent
+    data class QueryChanged(
+        val query: String,
+    ) : LibraryIntent
+
+    data class BookcaseSelected(
+        val bookcaseId: String?,
+    ) : LibraryIntent
+
     data object Refresh : LibraryIntent
+
     data object DismissError : LibraryIntent
 }

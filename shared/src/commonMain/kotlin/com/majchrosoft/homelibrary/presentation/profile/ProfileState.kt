@@ -4,6 +4,7 @@ import com.majchrosoft.homelibrary.domain.model.User
 
 data class ProfileState(
     val user: User? = null,
+    val isInitialLoading: Boolean = true,
     val itemCount: Int = 0,
     val bookcaseCount: Int = 0,
     val shareableCount: Int = 0,

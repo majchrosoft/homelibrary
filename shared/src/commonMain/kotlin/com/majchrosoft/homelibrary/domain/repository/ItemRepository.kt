@@ -12,10 +12,22 @@ interface ItemRepository {
     fun observeMyLibrary(ownerId: String): Flow<List<Item>>
 
     /** Live stream of the public shareable catalog from all users. */
-    fun observeSharedCatalog(query: String? = null, limit: Int = 50): Flow<List<Item>>
+    fun observeSharedCatalog(
+        query: String? = null,
+        limit: Int = 50,
+    ): Flow<List<Item>>
 
-    suspend fun getById(ownerId: String, itemId: String): Item?
+    suspend fun getById(
+        ownerId: String,
+        itemId: String,
+    ): Item?
+
     suspend fun add(item: Item): Result<Item>
+
     suspend fun update(item: Item): Result<Unit>
-    suspend fun delete(ownerId: String, itemId: String): Result<Unit>
+
+    suspend fun delete(
+        ownerId: String,
+        itemId: String,
+    ): Result<Unit>
 }

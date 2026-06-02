@@ -21,13 +21,11 @@ class BookcasesViewModel(
     private val bookcaseRepository: BookcaseRepository,
     private val authRepository: AuthRepository,
 ) : MviViewModel<BookcasesState, BookcasesIntent>() {
-
     init {
         authRepository.currentUser
             .flatMapLatest { user ->
                 if (user == null) flowOf(emptyList()) else bookcaseRepository.observeMine(user.id)
-            }
-            .onEach { list -> setState { it.copy(isLoading = false, bookcases = list) } }
+            }.onEach { list -> setState { it.copy(isLoading = false, bookcases = list) } }
             .catch { e -> setState { it.copy(isLoading = false, errorMessage = e.message) } }
             .launchIn(scope)
     }
@@ -43,9 +41,11 @@ class BookcasesViewModel(
 
     private fun delete(bookcaseId: String) {
         scope.launch {
-            val user = authRepository.currentUser.first()
-                ?: return@launch setState { it.copy(errorMessage = "Not signed in") }
-            bookcaseRepository.delete(user.id, bookcaseId)
+            val user =
+                authRepository.currentUser.first()
+                    ?: return@launch setState { it.copy(errorMessage = "Not signed in") }
+            bookcaseRepository
+                .delete(user.id, bookcaseId)
                 .onFailure { e -> setState { it.copy(errorMessage = e.message) } }
         }
     }

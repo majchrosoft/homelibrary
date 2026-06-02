@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -69,11 +70,13 @@ fun SharedCatalogScreen() {
                     verticalArrangement = Arrangement.Center,
                 ) { CircularProgressIndicator() }
 
-                state.errorMessage != null -> Text(
-                    "Error: ${state.errorMessage}",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(16.dp),
-                )
+                state.errorMessage != null -> SelectionContainer {
+                    Text(
+                        "Error: ${state.errorMessage}",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
 
                 state.items.isEmpty() -> Text(
                     "No matching items right now. Be the first to share — flip the toggle on any of your items.",

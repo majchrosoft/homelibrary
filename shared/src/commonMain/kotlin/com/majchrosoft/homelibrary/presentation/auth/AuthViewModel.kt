@@ -9,10 +9,11 @@ import kotlinx.coroutines.launch
 class AuthViewModel(
     private val authRepository: AuthRepository,
 ) : MviViewModel<AuthState, AuthIntent>() {
-
     init {
         authRepository.currentUser
-            .onEach { user -> setState { it.copy(user = user) } }
+            .onEach { user ->
+                setState { it.copy(user = user) }
+            }
             .launchIn(scope)
     }
 
@@ -27,19 +28,28 @@ class AuthViewModel(
         }
     }
 
-    private fun signIn(email: String, password: String) {
+    private fun signIn(
+        email: String,
+        password: String,
+    ) {
         scope.launch {
             setState { it.copy(isLoading = true, errorMessage = null) }
-            authRepository.signInWithEmail(email, password)
+            authRepository
+                .signInWithEmail(email, password)
                 .onSuccess { setState { it.copy(isLoading = false) } }
                 .onFailure { e -> setState { it.copy(isLoading = false, errorMessage = e.message) } }
         }
     }
 
-    private fun signUp(email: String, password: String, displayName: String?) {
+    private fun signUp(
+        email: String,
+        password: String,
+        displayName: String?,
+    ) {
         scope.launch {
             setState { it.copy(isLoading = true, errorMessage = null) }
-            authRepository.signUpWithEmail(email, password, displayName)
+            authRepository
+                .signUpWithEmail(email, password, displayName)
                 .onSuccess { setState { it.copy(isLoading = false) } }
                 .onFailure { e -> setState { it.copy(isLoading = false, errorMessage = e.message) } }
         }

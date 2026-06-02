@@ -23,8 +23,9 @@ class ItemDetailViewModel(
     private val bookcaseRepository: BookcaseRepository,
     private val authRepository: AuthRepository,
 ) : MviViewModel<ItemDetailState, ItemDetailIntent>() {
-
-    init { load() }
+    init {
+        load()
+    }
 
     override fun initialState() = ItemDetailState()
 
@@ -40,8 +41,9 @@ class ItemDetailViewModel(
                 setState { it.copy(isLoading = false, errorMessage = "Item not found") }
                 return@launch
             }
-            val bookcaseName = item.item.bookcase
-                ?.let { bcId -> bookcaseRepository.getById(user.id, bcId)?.name }
+            val bookcaseName =
+                item.item.bookcase
+                    ?.let { bcId -> bookcaseRepository.getById(user.id, bcId)?.name }
             setState { it.copy(isLoading = false, item = item, bookcaseName = bookcaseName) }
         }
     }
@@ -57,18 +59,20 @@ class ItemDetailViewModel(
 
     private fun toggleBorrow(borrowedBy: String?) {
         val current = state.value.item ?: return
-        val newBorrow = if (current.borrow.isBorrowed) {
-            BorrowState(isBorrowed = false)
-        } else {
-            BorrowState(
-                isBorrowed = true,
-                borrowedBy = borrowedBy.orEmpty().ifBlank { "Unknown" },
-                borrowedAt = Clock.System.now(),
-            )
-        }
+        val newBorrow =
+            if (current.borrow.isBorrowed) {
+                BorrowState(isBorrowed = false)
+            } else {
+                BorrowState(
+                    isBorrowed = true,
+                    borrowedBy = borrowedBy.orEmpty().ifBlank { "Unknown" },
+                    borrowedAt = Clock.System.now(),
+                )
+            }
         val updated = current.copy(borrow = newBorrow)
         scope.launch {
-            itemRepository.update(updated)
+            itemRepository
+                .update(updated)
                 .onSuccess { setState { it.copy(item = updated) } }
                 .onFailure { e -> setState { it.copy(errorMessage = e.message) } }
         }
@@ -78,7 +82,8 @@ class ItemDetailViewModel(
         val current = state.value.item ?: return
         val updated = current.copy(item = current.item.copy(shareable = !current.item.shareable))
         scope.launch {
-            itemRepository.update(updated)
+            itemRepository
+                .update(updated)
                 .onSuccess { setState { it.copy(item = updated) } }
                 .onFailure { e -> setState { it.copy(errorMessage = e.message) } }
         }
@@ -87,7 +92,8 @@ class ItemDetailViewModel(
     private fun delete() {
         val current = state.value.item ?: return
         scope.launch {
-            itemRepository.delete(current.ownerId, current.id)
+            itemRepository
+                .delete(current.ownerId, current.id)
                 .onSuccess { setState { it.copy(deleted = true) } }
                 .onFailure { e -> setState { it.copy(errorMessage = e.message) } }
         }

@@ -20,11 +20,14 @@ data class ItemDetailState(
 
 sealed interface ItemDetailIntent {
     /** Toggle the item's loan status. When marking as borrowed, [borrowedBy] is required. */
-    data class ToggleBorrow(val borrowedBy: String?) : ItemDetailIntent
+    data class ToggleBorrow(
+        val borrowedBy: String?,
+    ) : ItemDetailIntent
 
     /** Flip [com.majchrosoft.homelibrary.domain.model.ItemDetails.shareable]. */
     data object ToggleShareable : ItemDetailIntent
 
     data object Delete : ItemDetailIntent
+
     data object DismissError : ItemDetailIntent
 }

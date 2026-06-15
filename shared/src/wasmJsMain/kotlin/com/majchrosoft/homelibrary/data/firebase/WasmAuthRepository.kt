@@ -117,7 +117,7 @@ internal class WasmAuthRepository(
         try {
             withAuth { a, u ->
                 val user = a.currentUser
-                user?.let { u.getIdToken(it).await().toString() }
+                user?.let { u.getIdToken(it).awaitNonnull().toString() }
             }
         } catch (e: Exception) {
             sessionManager.bearerToken
@@ -158,9 +158,9 @@ internal class WasmAuthRepository(
     ): Result<User> =
         try {
             withAuth { a, u ->
-                val credential = u.signInWithEmailAndPassword(a, email, password).await()
+                val credential = u.signInWithEmailAndPassword(a, email, password).awaitNonnull()
                 val firebaseUser = credential.user ?: throw Exception("Firebase returned null user")
-                val token = u.getIdToken(firebaseUser).await().toString()
+                val token = u.getIdToken(firebaseUser).awaitNonnull().toString()
                 sessionManager.bearerToken = token
                 val user = firebaseUser.toDomain()
                 Result.success(user)
@@ -176,14 +176,14 @@ internal class WasmAuthRepository(
     ): Result<User> =
         try {
             withAuth { a, u ->
-                val credential = u.createUserWithEmailAndPassword(a, email, password).await()
-                val firebaseUser = credential.user ?: throw Exception("Firebase returned null user")
+                val credential = u.createUserWithEmailAndPassword(a, email, password).awaitNonnull()
+                val firebaseUser = credential.user!! ?: throw Exception("Firebase returned null user")
                 if (displayName != null) {
                     val profile = createJsObject()
                     setDisplayName(profile, displayName)
                     u.updateProfile(firebaseUser, profile).await()
                 }
-                val token = u.getIdToken(firebaseUser).await().toString()
+                val token = u.getIdToken(firebaseUser).awaitNonnull().toString()
                 sessionManager.bearerToken = token
                 Result.success(firebaseUser.toDomain(displayNameOverride = displayName))
             }

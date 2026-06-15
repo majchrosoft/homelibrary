@@ -3,17 +3,19 @@ package com.majchrosoft.homelibrary.data.firebase
 import com.majchrosoft.homelibrary.domain.model.Item
 import com.majchrosoft.homelibrary.domain.repository.ItemRepository
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.resume
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 internal class WasmItemRepository : ItemRepository {
     private val db: FirebaseDbJs? get() = getFirebaseDb()
@@ -25,65 +27,24 @@ internal class WasmItemRepository : ItemRepository {
             coerceInputValues = true
         }
 
-    /**
-     * Reads all children of a Firebase DataSnapshot into a Kotlin Map.
-     *
-     * Firebase DataSnapshot is a plain JS object with no Symbol.iterator.
-     * Kotlin/Wasm requires js() to be a single expression, so we do the
-     * entire iteration on the JS side in one shot, returning a plain JS
-     * object that we turn into a Kotlin Map without any additional js().
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun readSnapshotChildren(snapshot: FirebaseDataSnapshotJs): Map<String, JsAny?> {
-        // Single js() call: returns a plain JS object { key: JSON.stringify(value), ... }
-        val result: JsAny = js("Object.fromEntries(Object.entries(snapshot).map(([k, v]) => [k, JSON.stringify(v)]))")
-        if (result == null) return emptyMap()
-        val entries: Array<String> = (js("Object.keys(result)") as? js.Array<String>) ?: js("Object.keys(result)") as js.Array<String>
-        val map = mutableMapOf<String, JsAny?>()
-        for (key in entries) {
-            val jsonVal = js("result[key]") as? String
-            map[key] = if (jsonVal != null) JSON.parse(jsonVal) else null
-        }
-        return map
-    }
-
-    private suspend fun <T> withDb(block: suspend (FirebaseDbJs, FirebaseDbUtilsJs) -> T): T {
-        val startTime = Clock.System.now().toEpochMilliseconds()
-        var currentDb = getFirebaseDb()
-        var currentUtils = getFirebaseDbUtils()
-
-        while ((currentDb == null || currentUtils == null) &&
-            (Clock.System.now().toEpochMilliseconds() - startTime < 30000)
-        ) {
-            delay(500)
-            currentDb = getFirebaseDb()
-            currentUtils = getFirebaseDbUtils()
-        }
-
-        if (currentDb == null || currentUtils == null) {
-            val errorMsg = "Firebase Database not initialized after 30s"
-            Napier.e { errorMsg }
-            throw Exception(errorMsg)
-        }
-
-        return block(currentDb, currentUtils)
-    }
-
     override fun observeMyLibrary(ownerId: String): Flow<List<Item>> =
         callbackFlow {
             Napier.d { "WasmItemRepository: observeMyLibrary started for $ownerId" }
             var unsubscribe: (() -> Unit)? = null
+
             val job =
                 launch {
                     try {
                         withDb { d, u ->
-                            Napier.d { "WasmItemRepository: withDb ready for observeMyLibrary ($ownerId)" }
                             val path = "users/$ownerId/items"
                             val reference = u.ref(d, path)
+
                             unsubscribe =
                                 u.onValue(reference) { snapshot ->
                                     Napier.d { "WasmItemRepository: onValue (items) triggered for $ownerId" }
-                                    val children = readSnapshotChildren(snapshot)
+                                    val exists = snapshot.exists()
+                                    Napier.d { "WasmItemRepository: snapshot exists: $exists" }
+                                    val children = snapshotToMap(snapshot)
                                     val items = children.mapNotNull { (key, rawValue) ->
                                         rawValue?.let {
                                             try {
@@ -109,12 +70,20 @@ internal class WasmItemRepository : ItemRepository {
                         close(e)
                     }
                 }
+
             awaitClose {
                 Napier.d { "WasmItemRepository: observeMyLibrary closed for $ownerId" }
-                job.cancel()
                 unsubscribe?.invoke()
             }
-        }
+        }.shareIn(
+            scope = kotlinx.coroutines.MainScope(),
+            replay = 1,
+            started = kotlinx.coroutines.flow.SharingStarted.Eagerly,
+        ).stateIn(
+            scope = kotlinx.coroutines.MainScope(),
+            initialValue = emptyList(),
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+        )
 
     override fun observeSharedCatalog(
         query: String?,
@@ -132,7 +101,7 @@ internal class WasmItemRepository : ItemRepository {
 
                             unsubscribe =
                                 u.onValue(q) { snapshot ->
-                                    val children = readSnapshotChildren(snapshot)
+                                    val children = snapshotToMap(snapshot)
                                     val items = children.mapNotNull { (key, rawValue) ->
                                         rawValue?.let {
                                             try {
@@ -248,4 +217,31 @@ internal class WasmItemRepository : ItemRepository {
         } catch (e: Exception) {
             Result.failure(e)
         }
+
+    private suspend fun <T> withDb(block: suspend (FirebaseDbJs, FirebaseDbUtilsJs) -> T): T {
+        var currentDb = getFirebaseDb()
+        var currentUtils = getFirebaseDbUtils()
+        Napier.d { "WasmItemRepository: withDb - db: ${currentDb != null}, utils: ${currentUtils != null}" }
+
+        if (currentDb == null || currentUtils == null) {
+            val startTime = Clock.System.now().toEpochMilliseconds()
+            Napier.d { "WasmItemRepository: withDb - waiting for Firebase Database..." }
+            while ((currentDb == null || currentUtils == null) &&
+                (Clock.System.now().toEpochMilliseconds() - startTime < 30000)
+            ) {
+                delay(500)
+                currentDb = getFirebaseDb()
+                currentUtils = getFirebaseDbUtils()
+                Napier.d { "WasmItemRepository: withDb - waiting... db: ${currentDb != null}, utils: ${currentUtils != null}" }
+            }
+        }
+
+        if (currentDb == null || currentUtils == null) {
+            val errorMsg = "Firebase Database not initialized after 30s"
+            Napier.e { errorMsg }
+            throw Exception(errorMsg)
+        }
+
+        return block(currentDb, currentUtils)
+    }
 }

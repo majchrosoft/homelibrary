@@ -3,42 +3,19 @@ package com.majchrosoft.homelibrary.data.firebase
 import com.majchrosoft.homelibrary.domain.model.Bookcase
 import com.majchrosoft.homelibrary.domain.repository.BookcaseRepository
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.resume
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
-import com.majchrosoft.homelibrary.data.firebase.JSON
-
-/**
- * Iterates over all children of a Firebase [FirebaseDataSnapshotJs] in Kotlin/Wasm.
- *
- * [FirebaseDataSnapshotJs] is a plain JavaScript object. We use top-level [js] calls
- * (which Kotlin/Wasm allows at top-level function bodies and property initializers) to access
- * child values by key.
- */
-typealias SnapshotChildAction = (key: String, value: JsAny?) -> Boolean
-private fun forEachSnapshotChild(
-    snapshot: FirebaseDataSnapshotJs,
-    action: SnapshotChildAction,
-): Boolean {
-    val keys: js.Array<String> = js("Object.keys(snapshot)")
-    var i = 0
-    val length = keys.length
-    var stopped = false
-    while (i < length && !stopped) {
-        val key = keys[i++]
-        val jsValue: Any? = js("snapshot[key]")
-        val value: JsAny? = jsValue as? JsAny
-        val cont: Boolean = action(key, value)
-        stopped = cont == false
-    }
-    return !stopped
-}
 
 internal class WasmBookcaseRepository : BookcaseRepository {
     private val db: FirebaseDbJs? get() = getFirebaseDb()
@@ -50,58 +27,36 @@ internal class WasmBookcaseRepository : BookcaseRepository {
             coerceInputValues = true
         }
 
-    private suspend fun <T> withDb(block: suspend (FirebaseDbJs, FirebaseDbUtilsJs) -> T): T {
-        val startTime = Clock.System.now().toEpochMilliseconds()
-        var currentDb = getFirebaseDb()
-        var currentUtils = getFirebaseDbUtils()
-
-        while ((currentDb == null || currentUtils == null) &&
-            (Clock.System.now().toEpochMilliseconds() - startTime < 30000)
-        ) {
-            delay(500)
-            currentDb = getFirebaseDb()
-            currentUtils = getFirebaseDbUtils()
-        }
-
-        if (currentDb == null || currentUtils == null) {
-            val errorMsg = "Firebase Database not initialized after 30s"
-            Napier.e { errorMsg }
-            throw Exception(errorMsg)
-        }
-
-        return block(currentDb, currentUtils)
-    }
-
     override fun observeMine(ownerId: String): Flow<List<Bookcase>> =
         callbackFlow {
             Napier.d { "WasmBookcaseRepository: observeMine started for $ownerId" }
             var unsubscribe: (() -> Unit)? = null
+
             val job =
                 launch {
                     try {
                         withDb { d, u ->
-                            Napier.d { "WasmBookcaseRepository: withDb ready for observeMine ($ownerId)" }
                             val path = "users/$ownerId/bookcases"
                             val reference = u.ref(d, path)
+
                             unsubscribe =
                                 u.onValue(reference) { snapshot ->
                                     Napier.d { "WasmBookcaseRepository: onValue (bookcases) triggered for $ownerId" }
-                                    val cases = mutableListOf<Bookcase>()
-                                    forEachSnapshotChild(snapshot) { key, rawValue ->
-                                        if (rawValue != null) {
+                                    val children = snapshotToMap(snapshot)
+                                    val bookcases = children.mapNotNull { (key, rawValue) ->
+                                        rawValue?.let {
                                             try {
-                                                val jsonString = JSON.stringify(rawValue)
-                                                val bookcase =
-                                                    json.decodeFromString<Bookcase>(jsonString).copy(id = key)
-                                                cases.add(bookcase)
+                                                val jsonString = JSON.stringify(it)
+                                                json.decodeFromString<Bookcase>(jsonString).copy(id = key)
                                             } catch (e: Exception) {
                                                 Napier.e(e) { "Failed to decode bookcase $key" }
+                                                null
                                             }
                                         }
-                                        true
-                                    }
-                                    Napier.d { "WasmBookcaseRepository: Emitting ${cases.size} bookcases for $ownerId" }
-                                    trySend(cases.sortedBy { it.name.lowercase() })
+                                    }.sortedBy { it.name.lowercase() }
+
+                                    Napier.d { "WasmBookcaseRepository: Emitting ${bookcases.size} bookcases for $ownerId" }
+                                    trySend(bookcases)
                                 }
                         }
                     } catch (e: Exception) {
@@ -110,20 +65,25 @@ internal class WasmBookcaseRepository : BookcaseRepository {
                         close(e)
                     }
                 }
+
             awaitClose {
                 Napier.d { "WasmBookcaseRepository: observeMine closed for $ownerId" }
-                job.cancel()
                 unsubscribe?.invoke()
             }
-        }
+        }.shareIn(
+            scope = kotlinx.coroutines.MainScope(),
+            replay = 1,
+            started = kotlinx.coroutines.flow.SharingStarted.Eagerly,
+        ).stateIn(
+            scope = kotlinx.coroutines.MainScope(),
+            initialValue = emptyList(),
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+        )
 
-    override suspend fun getById(
-        ownerId: String,
-        bookcaseId: String,
-    ): Bookcase? =
+    override suspend fun getById(ownerId: String, bookcaseId: String): Bookcase? =
         try {
             withDb { d, u ->
-                kotlin.coroutines.suspendCoroutine { continuation ->
+                suspendCoroutine { continuation ->
                     val path = "users/$ownerId/bookcases/$bookcaseId"
                     val reference = u.ref(d, path)
                     var unsubscribe: (() -> Unit)? = null
@@ -139,7 +99,8 @@ internal class WasmBookcaseRepository : BookcaseRepository {
                                 } else {
                                     try {
                                         val jsonString = JSON.stringify(rawValue)
-                                        val bookcase = json.decodeFromString<Bookcase>(jsonString).copy(id = bookcaseId)
+                                        val bookcase =
+                                            json.decodeFromString<Bookcase>(jsonString).copy(id = bookcaseId)
                                         continuation.resume(bookcase)
                                     } catch (e: Exception) {
                                         Napier.e(e) { "Failed to decode bookcase $bookcaseId" }
@@ -154,10 +115,7 @@ internal class WasmBookcaseRepository : BookcaseRepository {
             null
         }
 
-    override suspend fun add(
-        ownerId: String,
-        bookcase: Bookcase,
-    ): Result<Bookcase> =
+    override suspend fun add(ownerId: String, bookcase: Bookcase): Result<Bookcase> =
         try {
             withDb { d, u ->
                 val path = "users/$ownerId/bookcases"
@@ -205,4 +163,31 @@ internal class WasmBookcaseRepository : BookcaseRepository {
         } catch (e: Exception) {
             Result.failure(e)
         }
+
+    private suspend fun <T> withDb(block: suspend (FirebaseDbJs, FirebaseDbUtilsJs) -> T): T {
+        var currentDb = getFirebaseDb()
+        var currentUtils = getFirebaseDbUtils()
+        Napier.d { "WasmBookcaseRepository: withDb - db: ${currentDb != null}, utils: ${currentUtils != null}" }
+
+        if (currentDb == null || currentUtils == null) {
+            val startTime = Clock.System.now().toEpochMilliseconds()
+            Napier.d { "WasmBookcaseRepository: withDb - waiting for Firebase Database..." }
+            while ((currentDb == null || currentUtils == null) &&
+                (Clock.System.now().toEpochMilliseconds() - startTime < 30000)
+            ) {
+                delay(500)
+                currentDb = getFirebaseDb()
+                currentUtils = getFirebaseDbUtils()
+                Napier.d { "WasmBookcaseRepository: withDb - waiting... db: ${currentDb != null}, utils: ${currentUtils != null}" }
+            }
+        }
+
+        if (currentDb == null || currentUtils == null) {
+            val errorMsg = "Firebase Database not initialized after 30s"
+            Napier.e { errorMsg }
+            throw Exception(errorMsg)
+        }
+
+        return block(currentDb, currentUtils)
+    }
 }

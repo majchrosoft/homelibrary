@@ -1,9 +1,10 @@
 package com.majchrosoft.homelibrary.data.firebase
 
+import kotlin.js.Promise
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import kotlin.js.Promise
 
+// Firebase Auth
 @JsName("window.firebaseAuth")
 external val firebaseAuth: FirebaseAuthJs
 
@@ -72,6 +73,10 @@ external interface FirebaseDbUtilsJs : JsAny {
         callback: (FirebaseDataSnapshotJs) -> Unit,
     ): () -> Unit
 
+    fun get(
+        query: FirebaseQueryJs,
+    ): Promise<FirebaseDataSnapshotJs>
+
     fun push(ref: FirebaseDataReferenceJs): FirebaseDataReferenceJs
 
     fun set(
@@ -115,71 +120,35 @@ external interface FirebaseDataSnapshotJs : JsAny {
 }
 
 fun getFirebaseAuth(): FirebaseAuthJs? = js("window.firebaseAuth")
-
 fun getFirebaseAuthUtils(): FirebaseAuthUtilsJs? = js("window.firebaseAuthUtils")
-
 fun getFirebaseDb(): FirebaseDbJs? = js("window.firebaseDb")
-
 fun getFirebaseDbUtils(): FirebaseDbUtilsJs? = js("window.firebaseDbUtils")
 
-// ─── Snapshot interop helpers (wasm-compatible) ──
-// Kotlin/Wasm forbids js.Array<T>, .length, and inline js() in
-// nested scopes. All JS interaction must live in top-level @JsFun
-// definitions or top-level property initializers.
+// Snapshot iteration using Firebase's forEach() API
+typealias ChildHandler = (key: String, value: JsAny?) -> Unit
 
-typealias OnEntryHandler = (key: String, entryValueJs: JsAny?) -> Boolean
-
-/**
- * Calls [handler] for each *own* enumerable property key in [snapshot].
- * Implemented entirely on the JS side so [js()] lives only at the top level.
- */
-@JsFun("""(snapshot, handler) -> {
-    var result = true;
-    Object.keys(snapshot).forEach(function(key) {
-        if (!handler.call(undefined, key, snapshot[key])) result = false;
-    });
-    return result;
-}""")
-external fun forEachOwnEntry(
-    snapshot: FirebaseDataSnapshotJs,
-    handler: OnEntryHandler,
-): Boolean
-
-/**
- * Returns true if [snapshot] has at least one own enumerable key.
- */
-@JsFun("(snapshot) -> Object.keys(snapshot).length > 0")
-external fun snapshotHasOwnKeys(snapshot: FirebaseDataSnapshotJs): Boolean
-
-/**
- * Resolve a [FirebaseDataSnapshotJs] to a Kotlin map of (key, jsonString).
- * Value is JSON‑stringified on the JS side and returned as a Kotlin List of
- * [Pair] — no js.Array exposure on the Kotlin side.
- */
-data class SnapshotEntry(val key: String, val jsonValue: String?)
-
-@JsFun("""(snapshot) -> {
-    var keys = Object.keys(snapshot);
-    var entries = [];
-    for (var i = 0; i < keys.length; i++) {
-        var k = keys[i];
-        var v = snapshot[k];
-        entries.push([k, JSON.stringify(v)]);
+@JsName("forEachChild")
+@JsFun("""(snapshot, handler) => {
+    if (snapshot.forEach) {
+        snapshot.forEach(function(childSnapshot) {
+            handler(childSnapshot.key, childSnapshot.val());
+        });
     }
-    return entries;
 }""")
-external fun snapshotToEntries(snapshot: FirebaseDataSnapshotJs): List<SnapshotEntry>
+external fun forEachChild(
+    snapshot: FirebaseDataSnapshotJs,
+    handler: ChildHandler,
+): Unit
 
-/** Snapshot helper for WasmAuthRepository: displayName setter */
-fun setDisplayNameJs(
-    obj: JsAny,
-    name: String,
-) {
-    js("obj['displayName'] = name")
+fun snapshotToMap(snapshot: FirebaseDataSnapshotJs): Map<String, JsAny?> {
+    val map = mutableMapOf<String, JsAny?>()
+    forEachChild(snapshot) { key, value ->
+        map[key] = value
+    }
+    return map
 }
 
-// ─── JSON helpers ──────────────────────────────────────────────────────
-
+// JSON helpers
 @JsFun("(x) => JSON.stringify(x)")
 external fun stringify(x: JsAny?): String
 
@@ -187,66 +156,54 @@ external fun stringify(x: JsAny?): String
 external fun parse(x: String): JsAny?
 
 object JSON {
-    fun stringify(x: JsAny?): String =
-        com.majchrosoft.homelibrary.data.firebase
-            .stringify(x)
-
-    fun parse(x: String): JsAny? =
-        com.majchrosoft.homelibrary.data.firebase
-            .parse(x)
+    fun stringify(x: JsAny?): String = com.majchrosoft.homelibrary.data.firebase.stringify(x)
+    fun parse(x: String): JsAny? = com.majchrosoft.homelibrary.data.firebase.parse(x)
 }
 
-// ─── Snapshot helpers (wasm-compatible) ──────────────────
-// Kotlin/Wasm doesn't allow js.Array<T> in external function
-// signatures. Instead we use mutable lists as output collectors.
-
-typealias SnapshotEntryHandler = (key: String, valueJs: JsAny) -> Unit
-
-/**
- * Calls [handler] for each own enumerable property key in [snapshot].
- * Implemented on the JS side so [js()] is only used at top level.
- */
-external fun forEachSnapshotKeys(
-    snapshot: FirebaseDataSnapshotJs,
-    handler: SnapshotEntryHandler,
+// Promise helpers
+@JsFun("""(self, onSuccess, onFailure) => {
+    self.then(
+        function(value) {
+            var result = (value === undefined) ? null : value;
+            onSuccess(result);
+        },
+        onFailure
+    );
+    return null;
+}""")
+external fun <T : JsAny?> thenPromiseVoid(
+    promise: Promise<T>,
+    onSuccess: (T) -> Unit,
+    onFailure: (JsAny) -> Unit,
 )
 
-/**
- * Returns true if [snapshot] has at least one own enumerable property.
- */
-external fun snapshotHasOwnKeys(snapshot: FirebaseDataSnapshotJs): Boolean
-
-/**
- * Set `displayName` on a plain JS object.
- */
-@JsName("displayName")
-external var JsAny.displayName: JsString?
-
-/**
- * Create a plain JS object from key-value pairs.
- */
-@JsName("")
-external fun createJsPlainObject(): JsAny
-
-/**
- * Set a property by name on a plain JS object.
- */
-external fun setJsProp(
-    obj: JsAny,
-    name: String,
-    value: Any?,
-)
-
-suspend fun <T : JsAny?> Promise<T>.await(): T =
-    suspendCoroutine { continuation ->
-        then({
-            continuation.resume(it)
-            null
-        }, {
-            continuation.resumeWith(Result.failure(Exception(it.toString())
-            null
-        })
+suspend fun <T : JsAny?> Promise<T>.await(): T? =
+    suspendCoroutine { cont ->
+        thenPromiseVoid(
+            this,
+            { s: T -> cont.resume(s) },
+            { f: JsAny -> cont.resumeWith(Result.failure(Exception(f.toString()))) }
+        )
     }
+
+suspend fun <T : JsAny> Promise<T>.awaitNonnull(): T =
+    suspendCoroutine { cont ->
+        thenPromiseVoid(
+            this,
+            { s: T -> cont.resume(s) },
+            { f: JsAny -> cont.resumeWith(Result.failure(Exception(f.toString()))) }
+        )
+    }
+
+// JS object helpers
+@JsFun("""(obj, name, value) => { obj[name] = value; return obj; }""")
+external fun setJsPropRaw(obj: JsAny, name: String, value: JsAny?): JsAny
+
+fun setJsProp(obj: JsAny, name: String, value: Any?) {
+    @Suppress("UNCHECKED_CAST")
+    val jsValue = value as? JsAny?
+    setJsPropRaw(obj, name, jsValue)
+}
 
 fun String.toJsString(): JsString = this.toJsString()
 fun JsString.toKotlinString(): String = this.toString()

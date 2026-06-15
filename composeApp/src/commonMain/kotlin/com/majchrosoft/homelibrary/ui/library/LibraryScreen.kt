@@ -30,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -52,6 +53,12 @@ fun LibraryScreen() {
     val state by viewModel.state.collectAsState()
     
     Napier.d { "LibraryScreen: state.isLoading=${state.isLoading}, items=${state.items.size}" }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clear()
+        }
+    }
 
     Scaffold(
         topBar = {

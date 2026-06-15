@@ -12,8 +12,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
-import kotlin.coroutines.suspendCoroutine
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 
@@ -39,30 +40,35 @@ internal class WasmItemRepository : ItemRepository {
                             val path = "users/$ownerId/items"
                             val reference = u.ref(d, path)
 
-                            unsubscribe =
-                                u.onValue(reference) { snapshot ->
-                                    Napier.d { "WasmItemRepository: onValue (items) triggered for $ownerId" }
-                                    val exists = snapshot.exists()
-                                    Napier.d { "WasmItemRepository: snapshot exists: $exists" }
-                                    val children = snapshotToMap(snapshot)
-                                    val items = children.mapNotNull { (key, rawValue) ->
-                                        rawValue?.let {
-                                            try {
-                                                val jsonString = JSON.stringify(it)
-                                                json.decodeFromString<Item>(jsonString).copy(
-                                                    id = key,
-                                                    ownerId = ownerId,
-                                                )
-                                            } catch (e: Exception) {
-                                                Napier.e(e) { "Failed to decode item $key" }
-                                                null
-                                            }
-                                        }
-                                    }.sortedBy { it.item.title.lowercase() }
+                             unsubscribe =
+                                 u.onValue(reference) { snapshot ->
+                                     try {
+                                         Napier.d { "WasmItemRepository: onValue (items) triggered for $ownerId" }
+                                         val exists = snapshot.exists()
+                                         Napier.d { "WasmItemRepository: snapshot exists: $exists" }
+                                         val children = snapshotToMap(snapshot)
+                                         val items = children.mapNotNull { (key, rawValue) ->
+                                             rawValue?.let {
+                                                 try {
+                                                     val jsonString = JSON.stringify(it)
+                                                     json.decodeFromString<Item>(jsonString).copy(
+                                                         id = key,
+                                                         ownerId = ownerId,
+                                                     )
+                                                 } catch (e: Exception) {
+                                                     Napier.e(e) { "Failed to decode item $key" }
+                                                     null
+                                                 }
+                                             }
+                                         }.sortedBy { it.item.title.lowercase() }
 
-                                    Napier.d { "WasmItemRepository: Emitting ${items.size} items for $ownerId" }
-                                    trySend(items)
-                                }
+                                         Napier.d { "WasmItemRepository: Emitting ${items.size} items for $ownerId" }
+                                         trySend(items)
+                                     } catch (e: Exception) {
+                                         Napier.e(e) { "WasmItemRepository: Error processing snapshot for $ownerId" }
+                                         trySend(emptyList())
+                                     }
+                                 }
                         }
                     } catch (e: Exception) {
                         Napier.e(e) { "WasmItemRepository: Error in observeMyLibrary for $ownerId" }
@@ -143,26 +149,35 @@ internal class WasmItemRepository : ItemRepository {
                     var unsubscribe: (() -> Unit)? = null
                     unsubscribe =
                         u.onValue(reference) { snapshot ->
-                            unsubscribe?.invoke()
-                            if (!snapshot.exists()) {
-                                continuation.resume(null)
-                            } else {
-                                val rawValue = snapshot.getValue()
-                                if (rawValue == null) {
+                            try {
+                                unsubscribe?.invoke()
+                                if (!snapshot.exists()) {
                                     continuation.resume(null)
                                 } else {
-                                    try {
-                                        val jsonString = JSON.stringify(rawValue)
-                                        val item =
-                                            json.decodeFromString<Item>(jsonString).copy(
-                                                id = itemId,
-                                                ownerId = ownerId,
-                                            )
-                                        continuation.resume(item)
-                                    } catch (e: Exception) {
-                                        Napier.e(e) { "Failed to decode item $itemId" }
+                                    val rawValue = snapshot.getValue()
+                                    if (rawValue == null) {
                                         continuation.resume(null)
+                                    } else {
+                                        try {
+                                            val jsonString = JSON.stringify(rawValue)
+                                            val item =
+                                                json.decodeFromString<Item>(jsonString).copy(
+                                                    id = itemId,
+                                                    ownerId = ownerId,
+                                                )
+                                            continuation.resume(item)
+                                        } catch (e: Exception) {
+                                            Napier.e(e) { "Failed to decode item $itemId" }
+                                            continuation.resume(null)
+                                        }
                                     }
+                                }
+                            } catch (e: Exception) {
+                                Napier.e(e) { "WasmItemRepository: Error in getById callback for $itemId" }
+                                try {
+                                    continuation.resume(null)
+                                } catch (inner: Exception) {
+                                    Napier.e(inner) { "WasmItemRepository: Error resuming continuation for $itemId" }
                                 }
                             }
                         }

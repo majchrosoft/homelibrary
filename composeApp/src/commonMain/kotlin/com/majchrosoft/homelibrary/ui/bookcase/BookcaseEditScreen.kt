@@ -20,9 +20,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -38,9 +42,25 @@ fun BookcaseEditScreen(bookcaseId: String?) {
     val viewModel = koinInject<BookcaseEditViewModel> { parametersOf(bookcaseId) }
     val navigator = koinInject<Navigator>()
     val state by viewModel.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    val hasNavigated = remember { mutableStateOf(false) }
 
     LaunchedEffect(state.isSaved) {
-        if (state.isSaved) navigator.back()
+        if (state.isSaved && !hasNavigated.value) {
+            hasNavigated.value = true
+            navigator.back()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clear()
+        }
+    }
+
+    // If navigation has already happened, don't render anything
+    if (hasNavigated.value) {
+        return
     }
 
     Scaffold(
@@ -88,9 +108,9 @@ fun BookcaseEditScreen(bookcaseId: String?) {
                 minLines = 2,
             )
 
-            if (state.errorMessage != null) {
+            state.errorMessage?.let { errorMessage ->
                 SelectionContainer {
-                    Text(state.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    Text(errorMessage, color = MaterialTheme.colorScheme.error)
                 }
             }
 

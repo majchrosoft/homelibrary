@@ -27,6 +27,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,8 +53,26 @@ fun ItemEditScreen(itemId: String?) {
     val navigator = koinInject<Navigator>()
     val state by viewModel.state.collectAsState()
 
+    // Navigate back when isSaved becomes true - only once
+    var hasNavigated by remember { mutableStateOf(false) }
+    
     LaunchedEffect(state.isSaved) {
-        if (state.isSaved) navigator.back()
+        if (state.isSaved && !hasNavigated) {
+            hasNavigated = true
+            navigator.back()
+        }
+    }
+
+    // Clear ViewModel when the screen is disposed
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clear()
+        }
+    }
+
+    // If navigation has already happened, don't render anything
+    if (hasNavigated) {
+        return
     }
 
     Scaffold(
@@ -194,9 +213,9 @@ fun ItemEditScreen(itemId: String?) {
                 )
             }
 
-            if (state.errorMessage != null) {
+            state.errorMessage?.let { errorMessage ->
                 SelectionContainer {
-                    Text(state.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    Text(errorMessage, color = MaterialTheme.colorScheme.error)
                 }
             }
 
@@ -259,7 +278,11 @@ private fun BookcaseDropdown(
     onSelect: (String?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedLabel = bookcases.firstOrNull { it.id == selectedId }?.name ?: "—"
+    val selectedLabel = if (selectedId.isNullOrBlank()) {
+        "—"
+    } else {
+        bookcases.firstOrNull { it.id == selectedId }?.name ?: "—"
+    }
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = selectedLabel,

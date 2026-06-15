@@ -31,11 +31,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,9 +56,25 @@ fun ItemDetailScreen(itemId: String) {
     val viewModel = koinInject<ItemDetailViewModel> { parametersOf(itemId) }
     val navigator = koinInject<Navigator>()
     val state by viewModel.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    val hasNavigated = remember { mutableStateOf(false) }
 
     LaunchedEffect(state.deleted) {
-        if (state.deleted) navigator.back()
+        if (state.deleted && !hasNavigated.value) {
+            hasNavigated.value = true
+            navigator.back()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clear()
+        }
+    }
+
+    // If navigation has already happened, don't render anything
+    if (hasNavigated.value) {
+        return
     }
 
     var confirmDelete by remember { mutableStateOf(false) }

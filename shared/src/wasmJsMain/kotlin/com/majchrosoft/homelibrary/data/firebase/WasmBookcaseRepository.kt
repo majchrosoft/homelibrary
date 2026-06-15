@@ -12,8 +12,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
-import kotlin.coroutines.suspendCoroutine
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 
@@ -89,23 +90,32 @@ internal class WasmBookcaseRepository : BookcaseRepository {
                     var unsubscribe: (() -> Unit)? = null
                     unsubscribe =
                         u.onValue(reference) { snapshot ->
-                            unsubscribe?.invoke()
-                            if (!snapshot.exists()) {
-                                continuation.resume(null)
-                            } else {
-                                val rawValue = snapshot.getValue()
-                                if (rawValue == null) {
+                            try {
+                                unsubscribe?.invoke()
+                                if (!snapshot.exists()) {
                                     continuation.resume(null)
                                 } else {
-                                    try {
-                                        val jsonString = JSON.stringify(rawValue)
-                                        val bookcase =
-                                            json.decodeFromString<Bookcase>(jsonString).copy(id = bookcaseId)
-                                        continuation.resume(bookcase)
-                                    } catch (e: Exception) {
-                                        Napier.e(e) { "Failed to decode bookcase $bookcaseId" }
+                                    val rawValue = snapshot.getValue()
+                                    if (rawValue == null) {
                                         continuation.resume(null)
+                                    } else {
+                                        try {
+                                            val jsonString = JSON.stringify(rawValue)
+                                            val bookcase =
+                                                json.decodeFromString<Bookcase>(jsonString).copy(id = bookcaseId)
+                                            continuation.resume(bookcase)
+                                        } catch (e: Exception) {
+                                            Napier.e(e) { "Failed to decode bookcase $bookcaseId" }
+                                            continuation.resume(null)
+                                        }
                                     }
+                                }
+                            } catch (e: Exception) {
+                                Napier.e(e) { "WasmBookcaseRepository: Error in getById callback for $bookcaseId" }
+                                try {
+                                    continuation.resume(null)
+                                } catch (inner: Exception) {
+                                    Napier.e(inner) { "WasmBookcaseRepository: Error resuming continuation for $bookcaseId" }
                                 }
                             }
                         }

@@ -45,9 +45,6 @@ sealed class Screen {
         val bookcaseId: String? = null,
     ) : Screen()
 
-    /** Browse the public catalog of shareable items from other users. */
-    data object SharedCatalog : Screen()
-
     /** User profile + settings + sign out. */
     data object Profile : Screen()
 }

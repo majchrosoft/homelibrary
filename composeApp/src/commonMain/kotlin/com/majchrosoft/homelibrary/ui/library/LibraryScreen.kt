@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,8 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Card
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.majchrosoft.homelibrary.domain.model.Item
+import com.majchrosoft.homelibrary.presentation.library.BorrowFilter
 import com.majchrosoft.homelibrary.presentation.library.LibraryIntent
 import com.majchrosoft.homelibrary.presentation.library.LibraryViewModel
 import com.majchrosoft.homelibrary.presentation.navigation.Navigator
@@ -46,12 +48,12 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen() {
+fun libraryScreen() {
     Napier.d { "LibraryScreen: Composition" }
     val viewModel = koinInject<LibraryViewModel>()
     val navigator = koinInject<Navigator>()
     val state by viewModel.state.collectAsState()
-    
+
     Napier.d { "LibraryScreen: state.isLoading=${state.isLoading}, items=${state.items.size}" }
 
     DisposableEffect(Unit) {
@@ -65,9 +67,6 @@ fun LibraryScreen() {
             TopAppBar(
                 title = { Text("My Library") },
                 actions = {
-                    IconButton(onClick = { navigator.push(Screen.SharedCatalog) }) {
-                        Icon(Icons.Default.Public, contentDescription = "Shared catalog")
-                    }
                     IconButton(onClick = { navigator.push(Screen.Bookcases) }) {
                         Icon(Icons.Default.ViewModule, contentDescription = "Bookcases")
                     }
@@ -116,56 +115,121 @@ fun LibraryScreen() {
                 }
             }
 
-            when {
-                state.isLoading -> Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) { CircularProgressIndicator() }
-
-                state.errorMessage != null -> SelectionContainer {
-                    Text(
-                        text = "Error: ${state.errorMessage}",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(16.dp),
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                item {
+                    FilterChip(
+                        selected = state.borrowFilter == BorrowFilter.All,
+                        onClick = { viewModel.dispatch(LibraryIntent.BorrowFilterSelected(BorrowFilter.All)) },
+                        label = { Text("All") },
+                        leadingIcon =
+                            if (state.borrowFilter == BorrowFilter.All) {
+                                { Icon(Icons.Default.Search, contentDescription = null) }
+                            } else {
+                                null
+                            },
                     )
                 }
-
-                state.filtered.isEmpty() -> Text(
-                    "No items yet — tap + to add one.",
-                    modifier = Modifier.padding(16.dp),
-                )
-
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(state.filtered, key = { it.id }) { item ->
-                        ItemRow(item, onClick = { navigator.push(Screen.ItemDetail(item.id)) })
-                    }
+                item {
+                    FilterChip(
+                        selected = state.borrowFilter == BorrowFilter.Borrowed,
+                        onClick = { viewModel.dispatch(LibraryIntent.BorrowFilterSelected(BorrowFilter.Borrowed)) },
+                        label = { Text("On loan") },
+                        leadingIcon =
+                            if (state.borrowFilter == BorrowFilter.Borrowed) {
+                                { Icon(Icons.Default.Book, contentDescription = "On loan") }
+                            } else {
+                                null
+                            },
+                    )
                 }
+                item {
+                    FilterChip(
+                        selected = state.borrowFilter == BorrowFilter.NotBorrowed,
+                        onClick = { viewModel.dispatch(LibraryIntent.BorrowFilterSelected(BorrowFilter.NotBorrowed)) },
+                        label = { Text("Available") },
+                        leadingIcon =
+                            if (state.borrowFilter == BorrowFilter.NotBorrowed) {
+                                { Icon(Icons.Default.Book, contentDescription = "Available") }
+                            } else {
+                                null
+                            },
+                    )
+                }
+            }
+
+            when {
+                state.isLoading ->
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) { CircularProgressIndicator() }
+
+                state.errorMessage != null ->
+                    SelectionContainer {
+                        Text(
+                            text = "Error: ${state.errorMessage}",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(16.dp),
+                        )
+                    }
+
+                state.filtered.isEmpty() ->
+                    Text(
+                        "No items yet — tap + to add one.",
+                        modifier = Modifier.padding(16.dp),
+                    )
+
+                else ->
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(state.filtered, key = { it.id }) { item ->
+                            itemRow(item, onClick = { navigator.push(Screen.ItemDetail(item.id)) })
+                        }
+                    }
             }
         }
     }
 }
 
 @Composable
-private fun ItemRow(item: Item, onClick: () -> Unit) {
+private fun itemRow(
+    item: Item,
+    onClick: () -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(item.item.title.ifBlank { "Untitled" }, style = MaterialTheme.typography.titleMedium)
-            if (item.item.author.isNotBlank()) {
-                Text(item.item.author, style = MaterialTheme.typography.bodyMedium)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(item.item.title.ifBlank { "Untitled" }, style = MaterialTheme.typography.titleMedium)
+                    if (item.item.author.isNotBlank()) {
+                        Text(item.item.author, style = MaterialTheme.typography.bodyMedium)
+                    }
+                    Text(
+                        "Type: ${item.item.type.name.lowercase()}  ·  Quality: ${item.item.quality.name.lowercase()}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                if (item.borrow.isBorrowed) {
+                    Icon(
+                        imageVector = Icons.Default.Book,
+                        contentDescription = "On loan",
+                        tint = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
             }
-            Text(
-                "Type: ${item.item.type.name.lowercase()}  ·  Quality: ${item.item.quality.name.lowercase()}",
-                style = MaterialTheme.typography.bodySmall,
-            )
             if (item.borrow.isBorrowed) {
                 Text(
                     "On loan${item.borrow.borrowedBy?.let { " — $it" } ?: ""}",
                     color = MaterialTheme.colorScheme.tertiary,
                     style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
             }
         }

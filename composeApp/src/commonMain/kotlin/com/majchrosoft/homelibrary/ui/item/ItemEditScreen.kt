@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -55,7 +55,7 @@ fun ItemEditScreen(itemId: String?) {
 
     // Navigate back when isSaved becomes true - only once
     var hasNavigated by remember { mutableStateOf(false) }
-    
+
     LaunchedEffect(state.isSaved) {
         if (state.isSaved && !hasNavigated) {
             hasNavigated = true
@@ -95,11 +95,12 @@ fun ItemEditScreen(itemId: String?) {
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OutlinedTextField(
@@ -278,11 +279,12 @@ private fun BookcaseDropdown(
     onSelect: (String?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedLabel = if (selectedId.isNullOrBlank()) {
-        "—"
-    } else {
-        bookcases.firstOrNull { it.id == selectedId }?.name ?: "—"
-    }
+    val selectedLabel =
+        if (selectedId.isNullOrBlank()) {
+            "—"
+        } else {
+            bookcases.firstOrNull { it.id == selectedId }?.name ?: "—"
+        }
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = selectedLabel,

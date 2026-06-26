@@ -7,7 +7,9 @@ import com.russhwolf.settings.set
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class SessionManager(private val settings: Settings) {
+class SessionManager(
+    private val settings: Settings,
+) {
     private val json = Json { ignoreUnknownKeys = true }
 
     var user: User?

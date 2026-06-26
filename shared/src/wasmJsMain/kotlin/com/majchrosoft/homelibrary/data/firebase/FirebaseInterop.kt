@@ -1,8 +1,8 @@
 package com.majchrosoft.homelibrary.data.firebase
 
-import kotlin.js.Promise
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.js.Promise
 
 // Firebase Auth
 @JsName("window.firebaseAuth")
@@ -73,9 +73,7 @@ external interface FirebaseDbUtilsJs : JsAny {
         callback: (FirebaseDataSnapshotJs) -> Unit,
     ): () -> Unit
 
-    fun get(
-        query: FirebaseQueryJs,
-    ): Promise<FirebaseDataSnapshotJs>
+    fun get(query: FirebaseQueryJs): Promise<FirebaseDataSnapshotJs>
 
     fun push(ref: FirebaseDataReferenceJs): FirebaseDataReferenceJs
 
@@ -120,21 +118,26 @@ external interface FirebaseDataSnapshotJs : JsAny {
 }
 
 fun getFirebaseAuth(): FirebaseAuthJs? = js("window.firebaseAuth")
+
 fun getFirebaseAuthUtils(): FirebaseAuthUtilsJs? = js("window.firebaseAuthUtils")
+
 fun getFirebaseDb(): FirebaseDbJs? = js("window.firebaseDb")
+
 fun getFirebaseDbUtils(): FirebaseDbUtilsJs? = js("window.firebaseDbUtils")
 
 // Snapshot iteration using Firebase's forEach() API
 typealias ChildHandler = (key: String, value: JsAny?) -> Unit
 
 @JsName("forEachChild")
-@JsFun("""(snapshot, handler) => {
+@JsFun(
+    """(snapshot, handler) => {
     if (snapshot.forEach) {
         snapshot.forEach(function(childSnapshot) {
             handler(childSnapshot.key, childSnapshot.val());
         });
     }
-}""")
+}""",
+)
 external fun forEachChild(
     snapshot: FirebaseDataSnapshotJs,
     handler: ChildHandler,
@@ -156,12 +159,18 @@ external fun stringify(x: JsAny?): String
 external fun parse(x: String): JsAny?
 
 object JSON {
-    fun stringify(x: JsAny?): String = com.majchrosoft.homelibrary.data.firebase.stringify(x)
-    fun parse(x: String): JsAny? = com.majchrosoft.homelibrary.data.firebase.parse(x)
+    fun stringify(x: JsAny?): String =
+        com.majchrosoft.homelibrary.data.firebase
+            .stringify(x)
+
+    fun parse(x: String): JsAny? =
+        com.majchrosoft.homelibrary.data.firebase
+            .parse(x)
 }
 
 // Promise helpers
-@JsFun("""(self, onSuccess, onFailure) => {
+@JsFun(
+    """(self, onSuccess, onFailure) => {
     self.then(
         function(value) {
             var result = (value === undefined) ? null : value;
@@ -170,7 +179,8 @@ object JSON {
         onFailure
     );
     return null;
-}""")
+}""",
+)
 external fun <T : JsAny?> thenPromiseVoid(
     promise: Promise<T>,
     onSuccess: (T) -> Unit,
@@ -182,7 +192,7 @@ suspend fun <T : JsAny?> Promise<T>.await(): T? =
         thenPromiseVoid(
             this,
             { s: T -> cont.resume(s) },
-            { f: JsAny -> cont.resumeWith(Result.failure(Exception(f.toString()))) }
+            { f: JsAny -> cont.resumeWith(Result.failure(Exception(f.toString()))) },
         )
     }
 
@@ -191,19 +201,28 @@ suspend fun <T : JsAny> Promise<T>.awaitNonnull(): T =
         thenPromiseVoid(
             this,
             { s: T -> cont.resume(s) },
-            { f: JsAny -> cont.resumeWith(Result.failure(Exception(f.toString()))) }
+            { f: JsAny -> cont.resumeWith(Result.failure(Exception(f.toString()))) },
         )
     }
 
 // JS object helpers
 @JsFun("""(obj, name, value) => { obj[name] = value; return obj; }""")
-external fun setJsPropRaw(obj: JsAny, name: String, value: JsAny?): JsAny
+external fun setJsPropRaw(
+    obj: JsAny,
+    name: String,
+    value: JsAny?,
+): JsAny
 
-fun setJsProp(obj: JsAny, name: String, value: Any?) {
+fun setJsProp(
+    obj: JsAny,
+    name: String,
+    value: Any?,
+) {
     @Suppress("UNCHECKED_CAST")
     val jsValue = value as? JsAny?
     setJsPropRaw(obj, name, jsValue)
 }
 
 fun String.toJsString(): JsString = this.toJsString()
+
 fun JsString.toKotlinString(): String = this.toString()

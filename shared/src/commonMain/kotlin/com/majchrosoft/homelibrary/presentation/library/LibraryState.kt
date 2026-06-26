@@ -3,6 +3,14 @@ package com.majchrosoft.homelibrary.presentation.library
 import com.majchrosoft.homelibrary.domain.model.Bookcase
 import com.majchrosoft.homelibrary.domain.model.Item
 
+sealed interface BorrowFilter {
+    data object All : BorrowFilter
+
+    data object Borrowed : BorrowFilter
+
+    data object NotBorrowed : BorrowFilter
+}
+
 /**
  * UI state for the home-library list screen.
  *
@@ -17,6 +25,7 @@ data class LibraryState(
     val bookcases: List<Bookcase> = emptyList(),
     /** When non-null, only items in this bookcase are surfaced via [filtered]. */
     val selectedBookcaseId: String? = null,
+    val borrowFilter: BorrowFilter = BorrowFilter.All,
     val errorMessage: String? = null,
 ) {
     val filtered: List<Item>
@@ -27,19 +36,19 @@ data class LibraryState(
                 } else {
                     items.filter { it.item.bookcase == selectedBookcaseId }
                 }
-            return if (query.isBlank()) {
-                byBookcase
-            } else {
-                byBookcase.filter { i ->
-                    val t = i.item.title
-                    val a = i.item.author
-                    val isbn = i.item.isbn
-                    val p = i.item.publisher
-                    t.contains(query, ignoreCase = true) ||
-                        a.contains(query, ignoreCase = true) ||
-                        (isbn?.contains(query, ignoreCase = true) == true) ||
-                        (p?.contains(query, ignoreCase = true) == true)
-                }
+            return when (borrowFilter) {
+                BorrowFilter.All -> byBookcase
+                BorrowFilter.Borrowed -> byBookcase.filter { it.borrow.isBorrowed }
+                BorrowFilter.NotBorrowed -> byBookcase.filter { !it.borrow.isBorrowed }
+            }.filter { i ->
+                val t = i.item.title
+                val a = i.item.author
+                val isbn = i.item.isbn
+                val p = i.item.publisher
+                t.contains(query, ignoreCase = true) ||
+                    a.contains(query, ignoreCase = true) ||
+                    (isbn?.contains(query, ignoreCase = true) == true) ||
+                    (p?.contains(query, ignoreCase = true) == true)
             }
         }
 }
@@ -51,6 +60,10 @@ sealed interface LibraryIntent {
 
     data class BookcaseSelected(
         val bookcaseId: String?,
+    ) : LibraryIntent
+
+    data class BorrowFilterSelected(
+        val filter: BorrowFilter,
     ) : LibraryIntent
 
     data object Refresh : LibraryIntent

@@ -13,8 +13,7 @@ class AuthViewModel(
         authRepository.currentUser
             .onEach { user ->
                 setState { it.copy(user = user) }
-            }
-            .launchIn(scope)
+            }.launchIn(scope)
     }
 
     override fun initialState() = AuthState()

@@ -3,7 +3,6 @@ package com.majchrosoft.homelibrary
 import com.majchrosoft.homelibrary.presentation.auth.AuthViewModel
 import com.majchrosoft.homelibrary.presentation.bookcase.BookcaseEditViewModel
 import com.majchrosoft.homelibrary.presentation.bookcase.BookcasesViewModel
-import com.majchrosoft.homelibrary.presentation.catalog.SharedCatalogViewModel
 import com.majchrosoft.homelibrary.presentation.item.ItemDetailViewModel
 import com.majchrosoft.homelibrary.presentation.item.ItemEditViewModel
 import com.majchrosoft.homelibrary.presentation.library.LibraryViewModel
@@ -27,9 +26,6 @@ fun resolveLibraryViewModel(): LibraryViewModel = KoinPlatform.getKoin().get()
 
 @Suppress("unused") // Called from Swift.
 fun resolveBookcasesViewModel(): BookcasesViewModel = KoinPlatform.getKoin().get()
-
-@Suppress("unused") // Called from Swift.
-fun resolveSharedCatalogViewModel(): SharedCatalogViewModel = KoinPlatform.getKoin().get()
 
 @Suppress("unused") // Called from Swift.
 fun resolveProfileViewModel(): ProfileViewModel = KoinPlatform.getKoin().get()

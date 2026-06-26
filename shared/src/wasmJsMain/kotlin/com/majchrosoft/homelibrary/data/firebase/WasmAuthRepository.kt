@@ -36,38 +36,49 @@ internal class WasmAuthRepository(
             Napier.d("WasmAuthRepository: callbackFlow started", tag = "DEBUG app")
             var unsubscribe: (() -> Unit)? = null
             var firstEmission = true
+
             fun trySubscribe(): Boolean {
                 Napier.d("WasmAuthRepository: trySubscribe called", tag = "DEBUG app")
                 val a = getFirebaseAuth()
                 val u = getFirebaseAuthUtils()
                 if (a != null && u != null) {
                     Napier.d("WasmAuthRepository: Firebase Auth ready, subscribing", tag = "DEBUG app")
-                    unsubscribe = u.onAuthStateChanged(a) { jsUser ->
-                        val user = jsUser?.toDomain()
-                        Napier.d("WasmAuthRepository: onAuthStateChanged emitted user: ${user?.id}", tag = "DEBUG app")
-                        if (firstEmission) {
-                            firstEmission = false
-                            if (user == null) {
-                                Napier.d("WasmAuthRepository: First emission is null. Delaying to see if it's a false negative.", tag = "DEBUG app")
-                                launch {
-                                    delay(2000)
-                                    // Only emit null if it hasn't been emitted yet or changed
-                                    if (_currentUser.value == sessionManager.user) {
-                                        Napier.d("WasmAuthRepository: Still no Firebase user after 2s delay. Emitting null.", tag = "DEBUG app")
-                                        trySend(user) // Use the user from closure which is null
-                                    } else {
-                                        Napier.d("WasmAuthRepository: User already updated during delay, skipping null emission", tag = "DEBUG app")
+                    unsubscribe =
+                        u.onAuthStateChanged(a) { jsUser ->
+                            val user = jsUser?.toDomain()
+                            Napier.d("WasmAuthRepository: onAuthStateChanged emitted user: ${user?.id}", tag = "DEBUG app")
+                            if (firstEmission) {
+                                firstEmission = false
+                                if (user == null) {
+                                    Napier.d(
+                                        "WasmAuthRepository: First emission is null. Delaying to see if it's a false negative.",
+                                        tag = "DEBUG app",
+                                    )
+                                    launch {
+                                        delay(2000)
+                                        // Only emit null if it hasn't been emitted yet or changed
+                                        if (_currentUser.value == sessionManager.user) {
+                                            Napier.d(
+                                                "WasmAuthRepository: Still no Firebase user after 2s delay. Emitting null.",
+                                                tag = "DEBUG app",
+                                            )
+                                            trySend(user) // Use the user from closure which is null
+                                        } else {
+                                            Napier.d(
+                                                "WasmAuthRepository: User already updated during delay, skipping null emission",
+                                                tag = "DEBUG app",
+                                            )
+                                        }
                                     }
+                                } else {
+                                    Napier.d("WasmAuthRepository: First emission with user: ${user.id}", tag = "DEBUG app")
+                                    trySend(user)
                                 }
                             } else {
-                                Napier.d("WasmAuthRepository: First emission with user: ${user.id}", tag = "DEBUG app")
+                                Napier.d("WasmAuthRepository: Subsequent emission with user: ${user?.id}", tag = "DEBUG app")
                                 trySend(user)
                             }
-                        } else {
-                            Napier.d("WasmAuthRepository: Subsequent emission with user: ${user?.id}", tag = "DEBUG app")
-                            trySend(user)
                         }
-                    }
                     // Also check immediate currentUser if it's already there
                     val immediateUser = a.currentUser?.toDomain()
                     if (immediateUser != null) {
@@ -85,22 +96,23 @@ internal class WasmAuthRepository(
 
             if (!trySubscribe()) {
                 Napier.d("WasmAuthRepository: Firebase Auth not ready, starting retry loop", tag = "DEBUG app")
-                val job = launch {
-                    val startTime = Clock.System.now().toEpochMilliseconds()
-                    while ((Clock.System.now().toEpochMilliseconds() - startTime < 30000)) {
-                        delay(500)
-                        if (trySubscribe()) break
+                val job =
+                    launch {
+                        val startTime = Clock.System.now().toEpochMilliseconds()
+                        while ((Clock.System.now().toEpochMilliseconds() - startTime < 30000)) {
+                            delay(500)
+                            if (trySubscribe()) break
+                        }
                     }
-                }
                 awaitClose {
                     Napier.d("WasmAuthRepository: callbackFlow closing (retry path)", tag = "DEBUG app")
                     job.cancel()
                     unsubscribe?.invoke()
                 }
             } else {
-                awaitClose { 
+                awaitClose {
                     Napier.d("WasmAuthRepository: callbackFlow closing (normal path)", tag = "DEBUG app")
-                    unsubscribe?.invoke() 
+                    unsubscribe?.invoke()
                 }
             }
         }.onEach { user ->

@@ -32,9 +32,11 @@ class ProfileViewModel(
                 } else {
                     Napier.d { "ProfileViewModel: user is ${user.id}, observing library and bookcases" }
                     combine(
-                        itemRepository.observeMyLibrary(user.id)
+                        itemRepository
+                            .observeMyLibrary(user.id)
                             .onEach { Napier.d { "ProfileViewModel: itemRepository.observeMyLibrary emitted ${it.size} items" } },
-                        bookcaseRepository.observeMine(user.id)
+                        bookcaseRepository
+                            .observeMine(user.id)
                             .onEach { Napier.d { "ProfileViewModel: bookcaseRepository.observeMine emitted ${it.size} bookcases" } },
                     ) { items, bookcases -> Triple(user, items, bookcases) }
                 }

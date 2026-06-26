@@ -68,11 +68,6 @@ class MockHamletTest {
     ) : ItemRepository {
         override fun observeMyLibrary(ownerId: String): Flow<List<Item>> = flowOf(items.filter { it.ownerId == ownerId })
 
-        override fun observeSharedCatalog(
-            query: String?,
-            limit: Int,
-        ): Flow<List<Item>> = flowOf(emptyList())
-
         override suspend fun getById(
             ownerId: String,
             itemId: String,

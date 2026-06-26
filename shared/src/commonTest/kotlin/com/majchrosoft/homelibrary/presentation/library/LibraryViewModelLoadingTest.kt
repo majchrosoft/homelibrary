@@ -59,11 +59,6 @@ class LibraryViewModelLoadingTest {
     ) : ItemRepository {
         override fun observeMyLibrary(ownerId: String): Flow<List<Item>> = itemsFlow
 
-        override fun observeSharedCatalog(
-            query: String?,
-            limit: Int,
-        ): Flow<List<Item>> = TODO()
-
         override suspend fun getById(
             ownerId: String,
             itemId: String,

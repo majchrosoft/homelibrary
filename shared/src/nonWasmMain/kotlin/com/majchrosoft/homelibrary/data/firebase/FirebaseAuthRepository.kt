@@ -33,8 +33,7 @@ internal class FirebaseAuthRepository(
             }.launchIn(CoroutineScope(Dispatchers.Main))
     }
 
-    override suspend fun getBearerToken(): String? =
-        auth.currentUser?.getIdToken(forceRefresh = false)
+    override suspend fun getBearerToken(): String? = auth.currentUser?.getIdToken(forceRefresh = false)
 
     override suspend fun signInWithEmail(
         email: String,

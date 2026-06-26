@@ -10,13 +10,10 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.Dispatchers
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 internal class WasmItemRepository : ItemRepository {
     private val db: FirebaseDbJs? get() = getFirebaseDb()
@@ -40,35 +37,37 @@ internal class WasmItemRepository : ItemRepository {
                             val path = "users/$ownerId/items"
                             val reference = u.ref(d, path)
 
-                             unsubscribe =
-                                 u.onValue(reference) { snapshot ->
-                                     try {
-                                         Napier.d { "WasmItemRepository: onValue (items) triggered for $ownerId" }
-                                         val exists = snapshot.exists()
-                                         Napier.d { "WasmItemRepository: snapshot exists: $exists" }
-                                         val children = snapshotToMap(snapshot)
-                                         val items = children.mapNotNull { (key, rawValue) ->
-                                             rawValue?.let {
-                                                 try {
-                                                     val jsonString = JSON.stringify(it)
-                                                     json.decodeFromString<Item>(jsonString).copy(
-                                                         id = key,
-                                                         ownerId = ownerId,
-                                                     )
-                                                 } catch (e: Exception) {
-                                                     Napier.e(e) { "Failed to decode item $key" }
-                                                     null
-                                                 }
-                                             }
-                                         }.sortedBy { it.item.title.lowercase() }
+                            unsubscribe =
+                                u.onValue(reference) { snapshot ->
+                                    try {
+                                        Napier.d { "WasmItemRepository: onValue (items) triggered for $ownerId" }
+                                        val exists = snapshot.exists()
+                                        Napier.d { "WasmItemRepository: snapshot exists: $exists" }
+                                        val children = snapshotToMap(snapshot)
+                                        val items =
+                                            children
+                                                .mapNotNull { (key, rawValue) ->
+                                                    rawValue?.let {
+                                                        try {
+                                                            val jsonString = JSON.stringify(it)
+                                                            json.decodeFromString<Item>(jsonString).copy(
+                                                                id = key,
+                                                                ownerId = ownerId,
+                                                            )
+                                                        } catch (e: Exception) {
+                                                            Napier.e(e) { "Failed to decode item $key" }
+                                                            null
+                                                        }
+                                                    }
+                                                }.sortedBy { it.item.title.lowercase() }
 
-                                         Napier.d { "WasmItemRepository: Emitting ${items.size} items for $ownerId" }
-                                         trySend(items)
-                                     } catch (e: Exception) {
-                                         Napier.e(e) { "WasmItemRepository: Error processing snapshot for $ownerId" }
-                                         trySend(emptyList())
-                                     }
-                                 }
+                                        Napier.d { "WasmItemRepository: Emitting ${items.size} items for $ownerId" }
+                                        trySend(items)
+                                    } catch (e: Exception) {
+                                        Napier.e(e) { "WasmItemRepository: Error processing snapshot for $ownerId" }
+                                        trySend(emptyList())
+                                    }
+                                }
                         }
                     } catch (e: Exception) {
                         Napier.e(e) { "WasmItemRepository: Error in observeMyLibrary for $ownerId" }
@@ -88,54 +87,10 @@ internal class WasmItemRepository : ItemRepository {
         ).stateIn(
             scope = kotlinx.coroutines.MainScope(),
             initialValue = emptyList(),
-            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            started =
+                kotlinx.coroutines.flow.SharingStarted
+                    .WhileSubscribed(5000),
         )
-
-    override fun observeSharedCatalog(
-        query: String?,
-        limit: Int,
-    ): Flow<List<Item>> =
-        callbackFlow {
-            var unsubscribe: (() -> Unit)? = null
-            val job =
-                launch {
-                    try {
-                        withDb { d, u ->
-                            val path = "catalog/items"
-                            val reference = u.ref(d, path)
-                            val q = u.query(reference, u.orderByChild("item/title"), u.limitToFirst(limit))
-
-                            unsubscribe =
-                                u.onValue(q) { snapshot ->
-                                    val children = snapshotToMap(snapshot)
-                                    val items = children.mapNotNull { (key, rawValue) ->
-                                        rawValue?.let {
-                                            try {
-                                                val jsonString = JSON.stringify(it)
-                                                val item = json.decodeFromString<Item>(jsonString).copy(id = key)
-                                                if (query.isNullOrBlank() ||
-                                                    item.item.title.contains(query, ignoreCase = true) ||
-                                                    item.item.author.contains(query, ignoreCase = true)
-                                                ) item else null
-                                            } catch (e: Exception) {
-                                                Napier.e(e) { "Failed to decode catalog item $key" }
-                                                null
-                                            }
-                                        }
-                                    }
-                                    trySend(items)
-                                }
-                        }
-                    } catch (e: Exception) {
-                        trySend(emptyList())
-                        close(e)
-                    }
-                }
-            awaitClose {
-                job.cancel()
-                unsubscribe?.invoke()
-            }
-        }
 
     override suspend fun getById(
         ownerId: String,

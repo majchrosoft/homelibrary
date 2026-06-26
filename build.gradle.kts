@@ -12,8 +12,18 @@ plugins {
 }
 
 allprojects {
-    apply(plugin = rootProject.libs.plugins.ktlint.get().pluginId)
-    apply(plugin = rootProject.libs.plugins.detekt.get().pluginId)
+    apply(
+        plugin =
+            rootProject.libs.plugins.ktlint
+                .get()
+                .pluginId,
+    )
+    apply(
+        plugin =
+            rootProject.libs.plugins.detekt
+                .get()
+                .pluginId,
+    )
 
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         version.set("1.4.1")
@@ -48,11 +58,11 @@ val generateFirebaseConfig by tasks.registering {
     if (envFile.exists()) {
         inputs.file(envFile)
     }
-    
+
     val androidDest = rootProject.file("composeApp/google-services.json")
     val iosDest = rootProject.file("iosApp/iosApp/GoogleService-Info.plist")
     val webDest = rootProject.file("composeApp/src/wasmJsMain/resources/firebase-config.js")
-    
+
     outputs.files(androidDest, iosDest, webDest)
 
     doLast {
@@ -61,16 +71,19 @@ val generateFirebaseConfig by tasks.registering {
             return@doLast
         }
 
-        val env = envFile.readLines()
-            .filter { it.isNotBlank() && !it.startsWith("#") }
-            .map { it.split("=", limit = 2) }
-            .filter { it.size == 2 }
-            .associate { it[0].trim() to it[1].trim() }
+        val env =
+            envFile
+                .readLines()
+                .filter { it.isNotBlank() && !it.startsWith("#") }
+                .map { it.split("=", limit = 2) }
+                .filter { it.size == 2 }
+                .associate { it[0].trim() to it[1].trim() }
 
         fun getEnv(key: String) = env[key] ?: System.getenv(key) ?: "REPLACE_ME"
 
         // Android (google-services.json)
-        androidDest.writeText("""
+        androidDest.writeText(
+            """
 {
   "project_info": {
     "project_number": "${getEnv("FIREBASE_PROJECT_NUMBER")}",
@@ -99,10 +112,12 @@ val generateFirebaseConfig by tasks.registering {
   ],
   "configuration_version": "1"
 }
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         // iOS (GoogleService-Info.plist)
-        iosDest.writeText("""
+        iosDest.writeText(
+            """
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -135,11 +150,13 @@ val generateFirebaseConfig by tasks.registering {
 	<string>${getEnv("FIREBASE_DATABASE_URL")}</string>
 </dict>
 </plist>
-        """.trimIndent())
+            """.trimIndent(),
+        )
 
         // Web (firebase-config.js)
         webDest.parentFile.mkdirs()
-        webDest.writeText("""
+        webDest.writeText(
+            """
 // Generated from .env via Gradle generateFirebaseConfig task
 window.__FIREBASE_CONFIG__ = {
     apiKey: "${getEnv("FIREBASE_API_KEY")}",
@@ -150,8 +167,9 @@ window.__FIREBASE_CONFIG__ = {
     messagingSenderId: "${getEnv("FIREBASE_MESSAGING_SENDER_ID")}",
     appId: "${getEnv("FIREBASE_WEB_APP_ID")}"
 };
-        """.trimIndent())
-        
+            """.trimIndent(),
+        )
+
         logger.lifecycle("Firebase configuration files generated successfully.")
     }
 }

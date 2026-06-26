@@ -76,43 +76,48 @@ fun BookcasesScreen() {
         },
     ) { padding ->
         when {
-            state.isLoading -> Column(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) { CircularProgressIndicator() }
+            state.isLoading ->
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) { CircularProgressIndicator() }
 
-            state.errorMessage != null -> SelectionContainer {
-                Text(
-                    text = "Error: ${state.errorMessage}",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(padding).padding(16.dp),
-                )
-            }
-
-            state.bookcases.isEmpty() -> Text(
-                "No bookcases yet — tap + to add a shelf, box, or room.",
-                modifier = Modifier.padding(padding).padding(16.dp),
-            )
-
-            else -> LazyColumn(
-                contentPadding = PaddingValues(
-                    top = padding.calculateTopPadding() + 8.dp,
-                    bottom = padding.calculateBottomPadding() + 8.dp,
-                    start = 16.dp,
-                    end = 16.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                items(state.bookcases, key = { it.id }) { bookcase ->
-                    BookcaseCard(
-                        bookcase,
-                        onClick = { navigator.push(Screen.BookcaseEdit(bookcaseId = bookcase.id)) },
-                        onDelete = { pendingDelete = bookcase },
+            state.errorMessage != null ->
+                SelectionContainer {
+                    Text(
+                        text = "Error: ${state.errorMessage}",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(padding).padding(16.dp),
                     )
                 }
-            }
+
+            state.bookcases.isEmpty() ->
+                Text(
+                    "No bookcases yet — tap + to add a shelf, box, or room.",
+                    modifier = Modifier.padding(padding).padding(16.dp),
+                )
+
+            else ->
+                LazyColumn(
+                    contentPadding =
+                        PaddingValues(
+                            top = padding.calculateTopPadding() + 8.dp,
+                            bottom = padding.calculateBottomPadding() + 8.dp,
+                            start = 16.dp,
+                            end = 16.dp,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(state.bookcases, key = { it.id }) { bookcase ->
+                        BookcaseCard(
+                            bookcase,
+                            onClick = { navigator.push(Screen.BookcaseEdit(bookcaseId = bookcase.id)) },
+                            onDelete = { pendingDelete = bookcase },
+                        )
+                    }
+                }
         }
     }
 
@@ -133,7 +138,11 @@ fun BookcasesScreen() {
 }
 
 @Composable
-private fun BookcaseCard(bookcase: Bookcase, onClick: () -> Unit, onDelete: () -> Unit) {
+private fun BookcaseCard(
+    bookcase: Bookcase,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),

@@ -10,13 +10,10 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.Dispatchers
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 internal class WasmBookcaseRepository : BookcaseRepository {
     private val db: FirebaseDbJs? get() = getFirebaseDb()
@@ -44,17 +41,19 @@ internal class WasmBookcaseRepository : BookcaseRepository {
                                 u.onValue(reference) { snapshot ->
                                     Napier.d { "WasmBookcaseRepository: onValue (bookcases) triggered for $ownerId" }
                                     val children = snapshotToMap(snapshot)
-                                    val bookcases = children.mapNotNull { (key, rawValue) ->
-                                        rawValue?.let {
-                                            try {
-                                                val jsonString = JSON.stringify(it)
-                                                json.decodeFromString<Bookcase>(jsonString).copy(id = key)
-                                            } catch (e: Exception) {
-                                                Napier.e(e) { "Failed to decode bookcase $key" }
-                                                null
-                                            }
-                                        }
-                                    }.sortedBy { it.name.lowercase() }
+                                    val bookcases =
+                                        children
+                                            .mapNotNull { (key, rawValue) ->
+                                                rawValue?.let {
+                                                    try {
+                                                        val jsonString = JSON.stringify(it)
+                                                        json.decodeFromString<Bookcase>(jsonString).copy(id = key)
+                                                    } catch (e: Exception) {
+                                                        Napier.e(e) { "Failed to decode bookcase $key" }
+                                                        null
+                                                    }
+                                                }
+                                            }.sortedBy { it.name.lowercase() }
 
                                     Napier.d { "WasmBookcaseRepository: Emitting ${bookcases.size} bookcases for $ownerId" }
                                     trySend(bookcases)
@@ -78,10 +77,15 @@ internal class WasmBookcaseRepository : BookcaseRepository {
         ).stateIn(
             scope = kotlinx.coroutines.MainScope(),
             initialValue = emptyList(),
-            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            started =
+                kotlinx.coroutines.flow.SharingStarted
+                    .WhileSubscribed(5000),
         )
 
-    override suspend fun getById(ownerId: String, bookcaseId: String): Bookcase? =
+    override suspend fun getById(
+        ownerId: String,
+        bookcaseId: String,
+    ): Bookcase? =
         try {
             withDb { d, u ->
                 suspendCoroutine { continuation ->
@@ -125,7 +129,10 @@ internal class WasmBookcaseRepository : BookcaseRepository {
             null
         }
 
-    override suspend fun add(ownerId: String, bookcase: Bookcase): Result<Bookcase> =
+    override suspend fun add(
+        ownerId: String,
+        bookcase: Bookcase,
+    ): Result<Bookcase> =
         try {
             withDb { d, u ->
                 val path = "users/$ownerId/bookcases"

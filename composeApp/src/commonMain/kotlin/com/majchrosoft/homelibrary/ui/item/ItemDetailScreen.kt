@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -84,7 +84,14 @@ fun ItemDetailScreen(itemId: String) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.item?.item?.title?.ifBlank { "Item" } ?: "Item") },
+                title = {
+                    Text(
+                        state.item
+                            ?.item
+                            ?.title
+                            ?.ifBlank { "Item" } ?: "Item",
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navigator.back() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -104,33 +111,36 @@ fun ItemDetailScreen(itemId: String) {
         },
     ) { padding ->
         when {
-            state.isLoading -> Column(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) { CircularProgressIndicator() }
+            state.isLoading ->
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) { CircularProgressIndicator() }
 
-            state.item != null -> ItemDetailContent(
-                item = state.item!!,
-                bookcaseName = state.bookcaseName,
-                error = state.errorMessage,
-                contentPadding = padding,
-                onBorrowToggle = {
-                    if (state.item!!.borrow.isBorrowed) {
-                        viewModel.dispatch(ItemDetailIntent.ToggleBorrow(null))
-                    } else {
-                        borrowedBy = ""
-                        borrowDialog = true
-                    }
-                },
-                onShareableToggle = { viewModel.dispatch(ItemDetailIntent.ToggleShareable) },
-            )
+            state.item != null ->
+                ItemDetailContent(
+                    item = state.item!!,
+                    bookcaseName = state.bookcaseName,
+                    error = state.errorMessage,
+                    contentPadding = padding,
+                    onBorrowToggle = {
+                        if (state.item!!.borrow.isBorrowed) {
+                            viewModel.dispatch(ItemDetailIntent.ToggleBorrow(null))
+                        } else {
+                            borrowedBy = ""
+                            borrowDialog = true
+                        }
+                    },
+                    onShareableToggle = { viewModel.dispatch(ItemDetailIntent.ToggleShareable) },
+                )
 
-            else -> Text(
-                text = state.errorMessage ?: "Item not found",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(padding).padding(16.dp),
-            )
+            else ->
+                Text(
+                    text = state.errorMessage ?: "Item not found",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(padding).padding(16.dp),
+                )
         }
     }
 
@@ -182,11 +192,12 @@ private fun ItemDetailContent(
     onShareableToggle: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(item.item.title.ifBlank { "Untitled" }, style = MaterialTheme.typography.headlineSmall)
@@ -195,8 +206,18 @@ private fun ItemDetailContent(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AssistChip(onClick = {}, label = { Text(item.item.type.name.lowercase()) })
-            AssistChip(onClick = {}, label = { Text(item.item.quality.name.lowercase()) })
+            AssistChip(onClick = {}, label = {
+                Text(
+                    item.item.type.name
+                        .lowercase(),
+                )
+            })
+            AssistChip(onClick = {}, label = {
+                Text(
+                    item.item.quality.name
+                        .lowercase(),
+                )
+            })
             bookcaseName?.let { AssistChip(onClick = {}, label = { Text(it) }) }
         }
 
@@ -232,7 +253,7 @@ private fun ItemDetailContent(
         if (item.borrow.isBorrowed) {
             Text("Currently on loan", style = MaterialTheme.typography.titleSmall)
             item.borrow.borrowedBy?.let { Text("Borrower: $it") }
-            item.borrow.borrowedAt?.let { Text("Since: ${it}") }
+            item.borrow.borrowedAt?.let { Text("Since: $it") }
             Button(onClick = onBorrowToggle, modifier = Modifier.fillMaxWidth()) {
                 Text("Mark as returned")
             }
@@ -251,7 +272,10 @@ private fun ItemDetailContent(
 }
 
 @Composable
-private fun DetailRow(label: String, value: String?) {
+private fun DetailRow(
+    label: String,
+    value: String?,
+) {
     if (value.isNullOrBlank()) return
     Row(modifier = Modifier.fillMaxWidth()) {
         Text(

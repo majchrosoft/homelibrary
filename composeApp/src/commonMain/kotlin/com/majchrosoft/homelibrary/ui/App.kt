@@ -14,10 +14,9 @@ import com.majchrosoft.homelibrary.presentation.navigation.Screen
 import com.majchrosoft.homelibrary.ui.auth.SignInScreen
 import com.majchrosoft.homelibrary.ui.bookcase.BookcaseEditScreen
 import com.majchrosoft.homelibrary.ui.bookcase.BookcasesScreen
-import com.majchrosoft.homelibrary.ui.catalog.SharedCatalogScreen
 import com.majchrosoft.homelibrary.ui.item.ItemDetailScreen
 import com.majchrosoft.homelibrary.ui.item.ItemEditScreen
-import com.majchrosoft.homelibrary.ui.library.LibraryScreen
+import com.majchrosoft.homelibrary.ui.library.libraryScreen
 import com.majchrosoft.homelibrary.ui.profile.ProfileScreen
 import com.majchrosoft.homelibrary.ui.theme.HomeLibraryTheme
 import org.koin.compose.koinInject
@@ -56,12 +55,11 @@ private fun AuthedRoot() {
     val current by navigator.current.collectAsState()
 
     when (val screen = current) {
-        Screen.Library -> LibraryScreen()
+        Screen.Library -> libraryScreen()
         Screen.Bookcases -> BookcasesScreen()
         is Screen.BookcaseEdit -> BookcaseEditScreen(bookcaseId = screen.bookcaseId)
         is Screen.ItemDetail -> ItemDetailScreen(itemId = screen.itemId)
         is Screen.ItemEdit -> ItemEditScreen(itemId = screen.itemId)
-        Screen.SharedCatalog -> SharedCatalogScreen()
         Screen.Profile -> ProfileScreen()
     }
 }

@@ -38,7 +38,7 @@ fun ProfileScreen() {
     val viewModel = koinInject<ProfileViewModel>()
     val navigator = koinInject<Navigator>()
     val state by viewModel.state.collectAsState()
-    
+
     Napier.d { "ProfileScreen: state.isInitialLoading=${state.isInitialLoading}, user=${state.user?.id}" }
 
     DisposableEffect(Unit) {
@@ -97,7 +97,10 @@ fun ProfileScreen() {
 }
 
 @Composable
-private fun StatRow(label: String, value: String) {
+private fun StatRow(
+    label: String,
+    value: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,

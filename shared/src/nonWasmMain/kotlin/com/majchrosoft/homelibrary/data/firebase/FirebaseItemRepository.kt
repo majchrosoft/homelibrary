@@ -30,27 +30,6 @@ internal class FirebaseItemRepository(
                     }.sortedBy { it.item.title.lowercase() }
             }
 
-    override fun observeSharedCatalog(
-        query: String?,
-        limit: Int,
-    ): Flow<List<Item>> =
-        database
-            .reference(FirebasePaths.SHARED_CATALOG)
-            .orderByChild("item/title")
-            .limitToFirst(limit)
-            .valueEvents
-            .map { snapshot ->
-                snapshot.children
-                    .mapNotNull { child ->
-                        runCatching { child.value(Item.serializer()).withId(child.key, null) }
-                            .getOrNull()
-                    }.filter { item ->
-                        query.isNullOrBlank() ||
-                            item.item.title.contains(query, ignoreCase = true) ||
-                            item.item.author.contains(query, ignoreCase = true)
-                    }
-            }
-
     override suspend fun getById(
         ownerId: String,
         itemId: String,

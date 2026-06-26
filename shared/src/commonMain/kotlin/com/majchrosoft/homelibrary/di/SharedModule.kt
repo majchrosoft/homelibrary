@@ -3,7 +3,6 @@ package com.majchrosoft.homelibrary.di
 import com.majchrosoft.homelibrary.presentation.auth.AuthViewModel
 import com.majchrosoft.homelibrary.presentation.bookcase.BookcaseEditViewModel
 import com.majchrosoft.homelibrary.presentation.bookcase.BookcasesViewModel
-import com.majchrosoft.homelibrary.presentation.catalog.SharedCatalogViewModel
 import com.majchrosoft.homelibrary.presentation.item.ItemDetailViewModel
 import com.majchrosoft.homelibrary.presentation.item.ItemEditViewModel
 import com.majchrosoft.homelibrary.presentation.library.LibraryViewModel
@@ -28,7 +27,6 @@ fun sharedModule(): Module =
         singleOf(::AuthViewModel)
         singleOf(::LibraryViewModel)
         singleOf(::BookcasesViewModel)
-        singleOf(::SharedCatalogViewModel)
         singleOf(::ProfileViewModel)
 
         // Per-screen ViewModels — parameterized by the entity id, so we register

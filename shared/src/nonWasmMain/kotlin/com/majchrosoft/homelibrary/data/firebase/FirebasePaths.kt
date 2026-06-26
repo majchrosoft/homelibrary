@@ -17,8 +17,6 @@ package com.majchrosoft.homelibrary.data.firebase
  *         borrow/    ← embedded borrow state
  *         createdAt
  *         updatedAt
- * catalog/
- *   items/           ← projection of shareable=true items, written by a Cloud Function
  * ```
  *
  * Keep this file in sync with `database.rules.json`.
@@ -39,7 +37,4 @@ internal object FirebasePaths {
         userId: String,
         itemId: String,
     ) = "users/$userId/items/$itemId"
-
-    /** Public catalog projection — only items where shareable=true are mirrored here by a Cloud Function. */
-    const val SHARED_CATALOG = "catalog/items"
 }
